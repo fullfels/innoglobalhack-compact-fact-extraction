@@ -1,0 +1,9 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MWS_MODE: ${MWS_MODE:-mock}
+    volumes:
+      - ${MWS_MODEL_DIR:-./artifacts/models}:/models:ro

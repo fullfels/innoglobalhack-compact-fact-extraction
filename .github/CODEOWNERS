@@ -1,0 +1,10 @@
+# Only verified accounts with current repository access may be active owners.
+# QFa1: ML username verified by user; activate ML rules AFTER invitation accepted.
+# DE: username pending. See docs/TEAM_WORKFLOW.md.
+* @fullfels
+/src/contracts/ @fullfels
+/src/pipeline/ @fullfels
+/src/api/ @fullfels
+/frontend/ @fullfels
+/.github/ @fullfels
+/docs/ @fullfels

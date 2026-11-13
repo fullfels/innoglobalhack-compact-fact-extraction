@@ -1,0 +1,24 @@
+name: mock-prototype
+on: [push, pull_request]
+jobs:
+  contracts-and-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.lock
+      - run: python -m compileall -q src scripts
+      - run: pytest -q
+      - run: docker build -t mws-ci .
+      - run: docker run -d --name mws-ci -p 127.0.0.1:8000:8000 mws-ci
+      - name: Wait and smoke
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent http://127.0.0.1:8000/health; then break; fi
+            sleep 1
+          done
+          python scripts/smoke.py
+      - if: always()
+        run: docker logs mws-ci; docker rm -f mws-ci
