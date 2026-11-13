@@ -63,3 +63,18 @@ def test_checkpoint_size(tmp_path):
     (tmp_path/'weights').write_bytes(b'123');(tmp_path/'config').write_bytes(b'12')
     assert checkpoint_size([str(tmp_path),str(tmp_path/'weights')])==5
     assert checkpoint_size([]) is None
+
+
+def test_cuda_synchronization_and_allocation_formula_with_fake_runtime(tmp_path,monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    events=[]
+    cuda=SimpleNamespace(is_available=lambda:True,set_device=lambda d:events.append('device'),
+        get_device_name=lambda d:'SYNTHETIC CUDA',get_device_properties=lambda d:SimpleNamespace(total_memory=1000),
+        synchronize=lambda d:events.append('sync'),reset_peak_memory_stats=lambda d:events.append('reset'),max_memory_reserved=lambda d:200)
+    monkeypatch.setitem(sys.modules,'torch',SimpleNamespace(cuda=cuda,version=SimpleNamespace(cuda='synthetic')))
+    result=benchmark(lambda c:BenchmarkTarget(Pipeline(MockExtractor()),'cuda:0',synthetic=True),[CALL],
+        out=tmp_path/'gpu-fake',config={},device='cuda:0',repeats=2,cold_trials=1,exclusive_gpu=True,clock=Clock())
+    assert events.count('sync')>=8 and 'reset' in events
+    assert result['peak_vram_bytes']==200 and result['synthetic']
+    assert result['gpu_seconds_per_1000']==result['warm_wall_sec']*1000/2
