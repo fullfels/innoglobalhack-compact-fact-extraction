@@ -8,7 +8,7 @@ Source backlog: [tasks.csv](tasks.csv) и [backlog](06_BACKLOG.md). Состав
 
 Milestones: Contracts & Data; Mock E2E; Real Model Integration; Model Experiments; Final Evaluation & Release. Labels area/priority/type — фильтры; status:ready/in-progress/in-review и blocked — workflow, closed(completed) — Done. Projects только дополнительный вид, если права доступны.
 
-T16/T17 подтверждены кодом, 26 тестами и прошлым manual browser report. T02 требует review DE/ML; T18 — remote CI. Не закрывать задачи только по отчёту: сначала проверить код/тесты и commit. Остальные задачи не становятся Done от создания каталогов.
+T16/T17/T18 закрыты после проверки кода, 66 тестов, manual browser report и успешного remote CI. T02 требует review DE/ML; T19 остаётся частично выполненной. Не закрывать задачи только по отчёту: сначала проверить код/тесты и commit. Остальные задачи не становятся Done от создания каталогов.
 
 DE: invitation→clone→area:data→T03–T05; scripts/data для будущих transforms, src/normalizers для normalizers. ML: invitation→clone→area:ml→T06–T09, затем SFT/bridge; ml/README. FS: принимать PR, следить за shared schema и CI, T19/T20. Недоступные normalizers/веса не подменяются фиктивными модулями.
 
