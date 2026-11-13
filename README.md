@@ -38,7 +38,7 @@ Docker smoke: `python scripts/smoke.py http://127.0.0.1:8000`. После про
 
 ## Командный репозиторий
 
-Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1 (доступ после принятия invitation); DE: аккаунт ожидается. Текущий функционал — mock MVP, real Qwen и DE правила ещё не подключены.
+Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1 (активный write-доступ); DE: аккаунт ожидается. Текущий функционал — mock MVP, real Qwen и DE правила ещё не подключены.
 
 ```bash
 git clone https://github.com/fullfels/innoglobalhack-compact-fact-extraction.git
@@ -55,7 +55,7 @@ cd innoglobalhack-compact-fact-extraction
 | data | Правила получения данных, manifests, независимые fixtures |
 | ml | Будущие configs/training/evaluation/experiment manifests |
 | artifacts | Инструкция хранения весов вне Git |
-| tests, scripts | 26 существующих тестов и HTTP smoke |
+| tests, scripts | 66 тестов текущего snapshot и HTTP smoke |
 | .github | Существующий CI, ownership и PR/issue templates |
 | docs | Спецификация, план, handoff и backlog |
 
