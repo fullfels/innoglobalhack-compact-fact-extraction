@@ -87,7 +87,7 @@ def create_app(settings: Settings | None = None, pipeline: Pipeline | None = Non
             raise PipelineError('MODEL_NOT_READY', 503, 'extractor')
         started = perf_counter()
         try:
-            prediction, warnings = await worker.run(call)
+            prediction, warnings = await worker.run(call, request_id=request.state.request_id)
         except PipelineError:
             raise
         except Exception as exc:

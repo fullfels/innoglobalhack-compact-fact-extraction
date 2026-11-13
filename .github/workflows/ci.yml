@@ -10,7 +10,11 @@ jobs:
           python-version: '3.12'
       - run: pip install -r requirements-dev.lock
       - run: python -m compileall -q src scripts
-      - run: pytest -q
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/frontend.test.cjs
+      - run: MWS_DOCKER_TESTS=1 pytest -q
       - run: docker build -t mws-ci .
       - run: docker run -d --name mws-ci -p 127.0.0.1:8000:8000 mws-ci
       - name: Wait and smoke
