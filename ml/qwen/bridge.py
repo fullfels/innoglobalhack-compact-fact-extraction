@@ -6,6 +6,7 @@ Temporal/confirmation resolution can be injected by DE; no invented date fallbac
 from __future__ import annotations
 from copy import deepcopy
 import json
+import math
 import re
 from typing import Callable, Protocol
 from pydantic import ValidationError
@@ -14,6 +15,11 @@ from src.pipeline.adapters import PipelineError
 
 
 def strict_json(text):
+    def finite_float(value):
+        result = float(value)
+        if not math.isfinite(result):
+            raise ValueError("non-finite JSON number")
+        return result
     def pairs(items):
         result = {}
         for key, value in items:
@@ -24,7 +30,7 @@ def strict_json(text):
     fenced = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(.*?)\r?\n```", text.strip(), re.S | re.I)
     if fenced:
         text = fenced.group(1)
-    return json.loads(text, object_pairs_hook=pairs,
+    return json.loads(text, object_pairs_hook=pairs, parse_float=finite_float,
                       parse_constant=lambda _: (_ for _ in ()).throw(ValueError("non-finite JSON")))
 
 

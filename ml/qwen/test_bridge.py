@@ -39,7 +39,7 @@ def test_successful_empty_distinct_from_failed_generation(call):
     assert exc.value.code == "QWEN_GENERATION_FAILED" and "private" not in str(exc.value)
 
 
-@pytest.mark.parametrize("raw", ['{"facts":[],"facts":[]}', '{"facts":NaN}', '{"facts":[', 'prefix {"facts":[]}'])
+@pytest.mark.parametrize("raw", ['{"facts":[],"facts":[]}', '{"facts":NaN}', '{"facts":1e400}', '{"facts":[', 'prefix {"facts":[]}'])
 def test_malformed_duplicate_nonfinite_or_partial_json_fails(call, raw):
     with pytest.raises(PipelineError): parse_candidates(raw, call)
 
