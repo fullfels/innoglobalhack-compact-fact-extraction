@@ -1,6 +1,6 @@
 # Integrated system status — 2026-11-14
 
-Последнее дополнение: [REAL_RUNTIME_PROFILE.md](REAL_RUNTIME_PROFILE.md) — отдельные Docker/Compose packaging profiles, offline/negative проверки и READY/BLOCKED по этапам. #54 обновился до cc439ff; #53 b95cfce сохраняет serving blockers. Реального trained export/DE handoff/HTTP inference по-прежнему нет.
+Последнее дополнение: [REAL_RUNTIME_PROFILE.md](REAL_RUNTIME_PROFILE.md) — отдельные Docker/Compose packaging profiles, offline/negative проверки и READY/BLOCKED по этапам. Последний проверенный #54 — 8534de3 (runtime не изменился после cc439ff); #53 b95cfce сохраняет serving blockers. Реального trained export/DE handoff/HTTP inference по-прежнему нет.
 
 Последняя проверка: [QWEN_ACCEPTANCE_STATUS.md](QWEN_ACCEPTANCE_STATUS.md). PR #52 на 4958f94 получил официальный APPROVE после независимых mutation tests; появились draft #53 bridge и #54 pilot. Отдельная FS-ветка codex/qwen-acceptance включает bridge и metadata fix #50 (56303b0), full suite 183 passed. Реальных артефактов/reload/inference пока нет. Предшествующие отчёты ниже сохраняются как история.
 
