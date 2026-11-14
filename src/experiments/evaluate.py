@@ -82,7 +82,7 @@ def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     manifest={**identity(),'schema_version':'1','experiment_id':experiment_id,'model_id':model_id,'mode':mode,
         'dataset':{'sha256':None,'version':dataset_version},'model_config':model_config or {},
-        'evaluation_config':evaluation_config or {},'evaluator_sha256':None,'status':'running'}
+        'evaluation_config':evaluation_config or {},'artifact':deepcopy(model_config.get('artifact',{})),'evaluator_sha256':None,'status':'running'}
     write_json(out/'manifest.json',manifest)
     (out/'evaluation.log').write_text('',encoding='utf-8')
     try:
@@ -98,6 +98,7 @@ def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
                 manifest['mode']=adapter.descriptor.mode
                 if callable(getattr(adapter,'load',None)):adapter.load()
                 if getattr(adapter,'state','unloaded')!='ready':raise ExperimentError('model not ready')
+                manifest['artifact'].update({k:v for k,v in getattr(adapter,'public_info',{}).items() if k in {'revision','hash','dtype','manifest_id'} and v is not None})
                 generate(gold_path,pipeline,out/'predictions.jsonl')
             finally:
                 if callable(getattr(adapter,'close',None)):adapter.close()
