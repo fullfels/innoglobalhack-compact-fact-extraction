@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "files": {
+    "source/predict.py": {
+      "git_lf_sha256": "53f054c3c48f1cfc8e0d200097330b60027ae7e523280bb55820e9a957fd846c",
+      "executed_sha256": "7c66d0aa4a2cbfb5fb5e4a6b02c69e358a83b9345cf7943ea9272cc97104e71f",
+      "executed_eol": "CRLF",
+      "original_bytes_directly_checked": true,
+      "original_location": "mts_qwen35_probe.zip:mts_qwen35_probe/predict.py",
+      "original_bytes": 13576,
+      "git_bytes": 13350
+    },
+    "source/common.py": {
+      "git_lf_sha256": "490c00ff683b62b210c9130ef1e2bed7e49a54fd43c7d9b3c20d74746bd224e3",
+      "executed_sha256": "07727d404a99a6b868a36ab745c0719948424f0e7ac63aeec2d359e5b05dfdec",
+      "executed_eol": "CRLF",
+      "original_bytes_directly_checked": true,
+      "original_location": "mts_qwen35_probe.zip:mts_qwen35_probe/common.py",
+      "original_bytes": 5327,
+      "git_bytes": 5227
+    },
+    "source/prompt.txt": {
+      "git_lf_sha256": "579213181e740be4276e85db2a1867f9172c541cc71e7ffe2f7dbf22d835e2fe",
+      "executed_sha256": "579213181e740be4276e85db2a1867f9172c541cc71e7ffe2f7dbf22d835e2fe",
+      "executed_eol": "LF",
+      "original_bytes_directly_checked": true,
+      "original_location": "mts_qwen35_probe.zip:mts_qwen35_probe/prompt.txt",
+      "original_bytes": 4613,
+      "git_bytes": 4613
+    },
+    "notebooks/MTS_02_Qwen35_Check.ipynb": {
+      "git_lf_sha256": "8ed008ab2a6a709ddd54e84d6f25d7a86cc886d79bb4c6681033ab51e7a78daf",
+      "executed_sha256": "23c9624209ad8bc4383bba7adade86e61a1d628aae191f8dec1bf3153f7407f4",
+      "executed_eol": "CRLF",
+      "original_bytes_directly_checked": true,
+      "original_location": "MTS_02_Qwen35_Check.ipynb",
+      "original_bytes": 16093,
+      "git_bytes": 15792
+    }
+  },
+  "transformation": "Git stores canonical LF text. Original sources/notebook use CRLF where stated. Only CRLF-to-LF and its inverse are used; content/whitespace/metrics are not rewritten.",
+  "original_artifacts_directly_checked": true,
+  "gpu_run_authenticated": false,
+  "limits": "Original private artifacts were hashed directly on the ML workstation. Public verifier without --originals checks declared hashes and EOL equivalence, not access to private ZIPs or execution authenticity."
+}

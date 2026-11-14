@@ -7,7 +7,7 @@
 - `Qwen/Qwen3.5-0.8B`, ревизия `2fc06364715b967f1860aea9cf38778875588b17`.
 - Фактически загружено **852 985 920 параметров**.
 - **Tesla T4, FP16, batch=1, greedy, enable_thinking=False**, seed42.
-- Версии и точные хеши: [run_manifest.json](results/run_manifest.json).
+- Версии и fingerprints исполненных CRLF-байтов: [run_manifest.json](results/run_manifest.json).
 - [Исходный Colab](https://colab.research.google.com/drive/1-kXVgkLYQn2py5rs-DFunO3KcJjlRCkg) — права доступа определяются существующими настройками Google Drive.
 
 ## Качество на одинаковых 10 звонках
@@ -50,13 +50,16 @@
 
 ## Файлы и воспроизведение
 
-`source/` содержит **точные архивные версии** predict.py, common.py, prompt.txt и requirements из исполненного Colab-пакета; их хеши сверены с manifest. Это исторический standalone runner, не serving bridge проекта и не новая общая схема. Он не подключён к API и не меняет `src/contracts`/pipeline. Целевые интерфейсы интеграции остаются в [INTEGRATION_HANDOFF](../../../docs/INTEGRATION_HANDOFF.md).
+`source/` содержит архивный код в Git LF. Исходные predict.py/common.py и notebook сохранены в исходных артефактах с CRLF, поэтому их raw SHA256 отличаются. Прямое хеширование доступных оригиналов подтвердило fingerprints; переход CRLF → LF сохраняет содержание, но не побайтную идентичность. Раздельные Git LF / executed CRLF hashes и пределы доказательства: [provenance_eol.json](provenance_eol.json). Это исторический standalone runner, не serving bridge проекта и не новая общая схема. Он не подключён к API и не меняет `src/contracts`/pipeline. Целевые интерфейсы интеграции остаются в [INTEGRATION_HANDOFF](../../../docs/INTEGRATION_HANDOFF.md).
 
 Блокнот: [MTS_02_Qwen35_Check.ipynb](notebooks/MTS_02_Qwen35_Check.ipynb). Для повторения загрузить в него исходный приватный `mts_qwen35_probe.zip`, полученный у ML; архив содержит корпус организаторов и поэтому хранится вне Git. Его SHA256 и хеш архива результатов находятся в [provenance.json](provenance.json). Доступ к данным и весам следует [data/README](../../../data/README.md) и [artifacts/README](../../../artifacts/README.md).
 
 Чтобы проверить сохранённые метрики без GPU и ML-библиотек, из этой папки:
 
 ```bash
+python verify_provenance.py
+python verify_provenance.py --originals /path/to/private-original-downloads
+python -m unittest discover -s . -p test_provenance.py
 python verify_metrics.py --data /path/to/CaseData
 ```
 
@@ -67,3 +70,7 @@ python verify_metrics.py --data /path/to/CaseData
 Изменились модель, prompt и parser по сравнению с прежним Qwen3-0.6B run. Изолированного сравнения архитектур пока нет. Выборка не репрезентативна; отдельные DE нормализаторы ещё не подключены, Case-SFT не выполнялся, CPU/INT8/INT4 и real Docker acceptance не проверялись.
 
 Следующий шаг — pilot LoRA по T09 с групповой внутренней проверкой, loss masking, измерением памяти/ETA и reload адаптера. Полный DoD T08 (inner-dev и сопоставимая base), полная валидация, три режима и ресурсные gates остаются открытыми.
+
+## Исправление provenance после review
+
+Автоматическая проверка сравнивает Git LF hashes, неизменённые run fingerprints и документированную EOL-эквивалентность. Содержательная mutation любого Python source, prompt или notebook вызывает ошибку. `verify_metrics.py` сначала выполняет эту проверку. С `--originals` дополнительно хешируются оригинальные ZIP/notebook и извлечённые source bytes; без этой опции их прямая проверка не заявляется. Доступность оригиналов не аутентифицирует выполнение GPU. Исторические метрики, predictions, source-код и run_manifest не изменены.

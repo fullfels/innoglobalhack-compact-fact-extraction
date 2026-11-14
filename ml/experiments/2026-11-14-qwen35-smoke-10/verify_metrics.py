@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--data", required=True, type=Path, help="Official Case data directory, obtained separately")
     args = parser.parse_args()
     root = Path(__file__).resolve().parent
+    from verify_provenance import verify_archive
+    verify_archive(root)
     hashes = json.loads((root / "source/official_hashes.json").read_text(encoding="utf-8"))
     for name in ("val.jsonl", "baseline_pred.jsonl", "case_metrics.py"):
         actual = hashlib.sha256((args.data / name).read_bytes()).hexdigest()

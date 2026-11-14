@@ -11,5 +11,9 @@
   "new_gpu_run": false,
   "fine_tuning_performed": false,
   "private_raw_per_call_records_preserved_outside_git": true,
-  "published_raw_dialogues": false
+  "published_raw_dialogues": false,
+  "legacy_check_scope": "The three *_matches_executed_version flags refer to original source ZIP bytes before Git LF conversion; they do not assert byte identity of published LF Python files. See provenance_eol.json and verify_provenance.py.",
+  "git_lf_content_matches_executed_after_documented_eol_transform": true,
+  "published_python_raw_bytes_equal_executed_crlf": false,
+  "original_private_artifacts_hashed_directly_on_ml_workstation": true
 }
