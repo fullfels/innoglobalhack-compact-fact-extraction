@@ -13,6 +13,21 @@ from src.pipeline.normalizers import (
 )
 from src.pipeline.service import Pipeline
 
+TEST_CATALOG = {
+    "services": [
+        {"name": "Домашний интернет", "aliases": ["интернет", "вай-фай", "wi-fi"]},
+    ],
+    "devices": [
+        {"name": "Wi-Fi роутер", "aliases": ["роутер", "маршрутизатор"]},
+        {"name": "ТВ-приставка", "aliases": ["приставка", "смарт-приставка"]},
+    ],
+    "tariffs": [
+        {"name": "Тариф Игровой", "aliases": ["игровой", "геймерский"]},
+    ],
+    "issues": [
+        {"name": "Отсутствие соединения", "aliases": ["не работает", "не грузит", "виснет"]},
+    ],
+}
 
 def _make_call(turns_data: list[tuple[str, str]], started_at: str = "2026-05-19T17:00:00") -> CallInput:
     turns = tuple(Turn(idx=i, speaker=spk, text=txt) for i, (spk, txt) in enumerate(turns_data))
@@ -60,7 +75,7 @@ def _make_cand(
 
 def test_catalog_normalizer_preserves_first_letter_and_separates_devices():
     call = _make_call([("client", "Мой раутер и пристафка не работают, тариф игровой.")])
-    norm = CatalogNormalizer()
+    norm = CatalogNormalizer(catalog=TEST_CATALOG)
 
     c_router = _make_cand(call, obj_name="раутер", obj_type=None, value="не грузит")
     c_stb = _make_cand(call, obj_name="пристафка", obj_type=None, value="виснет")
@@ -218,7 +233,9 @@ def test_full_pipeline_e2e_filtering_and_validation():
                 )
             )
 
-    prediction, warnings = Pipeline(StubExtractor(), normalizers=build_default_normalizers()).run(call)
+    prediction, warnings = Pipeline(
+        StubExtractor(), normalizers=build_default_normalizers(catalog=TEST_CATALOG)
+    ).run(call)
     assert len(prediction.facts) == 2
     assert prediction.facts[0].object.name == "роутер"
     assert prediction.facts[0].polarity == 1
