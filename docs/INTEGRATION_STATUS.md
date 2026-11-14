@@ -1,5 +1,7 @@
 # Integrated system status — 2026-11-14
 
+Дополнение после появления PR #52: [PR52_INTEGRATION_REVIEW.md](PR52_INTEGRATION_REVIEW.md). Архивный 10-call Qwen smoke независимо пересчитан; request changes по source provenance. Новый FS verifier и 7 tests не меняют ML source или serving contracts. Текущий full local suite — 154 passed, 0 skipped; real serving и T20 по-прежнему не готовы без ML package. Данные основного отчёта ниже относятся к предшествующему snapshot.
+
 ## Итог и границы
 
 Проверен единый snapshot #46–#51 в `fs/deep-integration-audit`. Все актуальные PR heads входят в его историю (проверено merge-base после authenticated fetch). `main` остаётся `c8911a99936de3d7a06c5327e55abcc5fa28694e`. Открытые PR не объединялись, их heads/base не менялись этой задачей. Force push, переписывание истории и добавление неизвестных файлов не применялись.

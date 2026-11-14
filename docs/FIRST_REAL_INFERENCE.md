@@ -70,6 +70,8 @@ Bridge code/dependencies должны быть проверены как дов�
 
 CandidateBatch содержит `candidates`, `warnings`, `status='ok'`; CandidateFact — `fact`, `object_key?`, `evidence_turns`, `temporal_expression?`, `confirmation`, `provenance`, `warnings`. Полный Fact и enum — в `src/contracts/models.py`. Ошибки load/inference/decode/context/OOM — PipelineError с module/code/error_type, не успешный пустой batch. Пустой успешный результат допускается.
 
+Архивный parser из PR #52 не является bridge: он допускает null valid_from и другие формы, несовместимые с serving gate. Не подставлять started_at вместо неизвестной даты автоматически; нужна обоснованная ML/DE temporal policy либо явная ошибка. Не выставлять всем agreements confirmed без семантически проверенного клиентского evidence. Review и проверка provenance: [PR52_INTEGRATION_REVIEW.md](PR52_INTEGRATION_REVIEW.md).
+
 ## 3. Передача от DE
 
 Нужны реализации `Normalizer.normalize(CandidateBatch, CallInput) -> CandidateBatch` в порядке catalog → temporal → state → polarity → grounding. Catalog и его hash передаются при сборке, без mutable global state между calls. Передать fixtures aliases/ambiguity, даты и границы года, отрицания/agreements, historical state transitions/multiobject и Unicode source.
