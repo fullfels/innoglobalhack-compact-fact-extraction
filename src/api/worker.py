@@ -7,6 +7,22 @@ from src.pipeline.adapters import PipelineError
 
 logger = logging.getLogger('mws.worker')
 
+async def drain_task(task):
+    """Finish physical work before propagating cancellation, including repeated cancels."""
+    interrupted = False
+    while not task.done():
+        try:
+            await asyncio.shield(task)
+        except asyncio.CancelledError:
+            if task.cancelled():raise
+            interrupted = True
+        except Exception:
+            break
+    if interrupted:
+        if not task.cancelled():task.exception()
+        raise asyncio.CancelledError
+    return task.result()
+
 class InferenceWorker:
     def __init__(self, pipeline):
         self.pipeline = pipeline
@@ -54,7 +70,7 @@ class InferenceWorker:
         self.closing = True
         if self.task is not None:
             try:
-                await asyncio.shield(self.task)
+                await drain_task(self.task)
             except Exception:
                 pass
         # Native inference must finish before model resources may be released.

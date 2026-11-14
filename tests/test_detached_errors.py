@@ -89,3 +89,26 @@ def test_completion_before_waiter_cancellation_is_not_lost(caplog):
     assert len(events) == 1 and events[0]['request_id'] == 'completion-race'
     assert events[0]['error_type'] == 'RuntimeError'
     assert 'sensitive details' not in caplog.text
+
+
+def test_cancelled_shutdown_still_drains_physical_work():
+    from src.api.worker import InferenceWorker
+    async def scenario():
+        entered,release=threading.Event(),threading.Event()
+        class Slow:
+            def run(self,call):entered.set();assert release.wait(5);return 'done'
+        worker=InferenceWorker(Slow());waiter=asyncio.create_task(worker.run(CALL))
+        try:
+            assert await asyncio.to_thread(entered.wait,1)
+            shutdown=asyncio.create_task(worker.close())
+            await asyncio.sleep(0)
+            shutdown.cancel();await asyncio.sleep(0);await asyncio.sleep(0)
+            assert not shutdown.done(), 'cancelled drain returned while native inference is still running'
+            shutdown.cancel();await asyncio.sleep(0)
+            assert not shutdown.done()
+            release.set()
+            assert await waiter=='done'
+            with pytest.raises(asyncio.CancelledError):await shutdown
+        finally:
+            release.set();await worker.close()
+    asyncio.run(scenario())
