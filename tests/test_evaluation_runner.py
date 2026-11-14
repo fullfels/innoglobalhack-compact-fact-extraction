@@ -131,3 +131,57 @@ def test_gold_optional_type_anomaly_is_reported_without_relaxing_predictions(bun
     assert json.loads(g.read_text())['facts'][0]['object']['type']=='other'
     p.write_text(json.dumps(row)+'\n')
     with pytest.raises(ExperimentError):preflight(g,p)
+
+
+def test_unknown_prediction_fields_rejected(bundle):
+    g,p,row=bundle;row['gold_labels']={'should_not_be_here':True}
+    p.write_text(json.dumps(row)+'\n')
+    with pytest.raises(ExperimentError):preflight(g,p)
+
+
+def test_config_factory_cannot_rewrite_recorded_manifest(bundle,tmp_path,monkeypatch):
+    from types import SimpleNamespace
+    g,_,_=bundle;config={'nested':{'budget':32}}
+    class Adapter:
+        descriptor=SimpleNamespace(model_id='fixture',mode='synthetic');state='ready'
+    class Target:
+        extractor=Adapter()
+        def run(self,c):return Pipeline(MockExtractor()).run(c)
+    def build(c):c['nested']['budget']=999;return Target()
+    monkeypatch.setattr('src.experiments.evaluate.factory',lambda _:build)
+    script=tmp_path/'spy.py';script.write_text("import json,sys\njson.dump(dict.fromkeys(['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'],1),open(sys.argv[4],'w'))")
+    evaluate(gold_path=g,predictions=None,evaluator=script,out=tmp_path/'out',model_id='fixture',experiment_id='fixture',model_config=config,pipeline_factory='fixture:build')
+    assert config['nested']['budget']==32
+    assert json.loads((tmp_path/'out/manifest.json').read_text())['model_config']==config
+
+
+def test_evaluator_must_not_change_validated_inputs(bundle,tmp_path,monkeypatch):
+    import subprocess
+    g,p,_=bundle;script=tmp_path/'spy.py';script.write_text('# supplied test double')
+    def changed(args,**kwargs):
+        Path(args[2]).write_text('{}\n')
+        Path(args[-1]).write_text(json.dumps(dict.fromkeys(['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'],1)))
+        return subprocess.CompletedProcess(args,0,stdout='',stderr='')
+    monkeypatch.setattr('src.experiments.evaluate.subprocess.run',changed)
+    with pytest.raises(ExperimentError):
+        evaluate(gold_path=g,predictions=p,evaluator=script,out=tmp_path/'out',model_id='x',experiment_id='x')
+    assert json.loads((tmp_path/'out/manifest.json').read_text())['status']=='failed'
+    assert json.loads((tmp_path/'out/metrics.json').read_text())['status']=='not_evaluated'
+
+
+def test_mismatched_metric_counts_rejected(bundle,tmp_path):
+    g,p,_=bundle;script=tmp_path/'spy.py'
+    script.write_text("import json,sys\nm=dict.fromkeys(['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'],1);m['n_calls']=999\njson.dump(m,open(sys.argv[4],'w'))")
+    with pytest.raises(ExperimentError):evaluate(gold_path=g,predictions=p,evaluator=script,out=tmp_path/'out',model_id='x',experiment_id='x')
+
+@pytest.mark.parametrize('payload',['{"call_id":"x","facts":[],"x":1e999}\n','{"call_id":"x","call_id":"y","facts":[]}\n'])
+def test_ambiguous_or_nonfinite_json_rejected(tmp_path,payload):
+    p=tmp_path/'bad.jsonl';p.write_text(payload)
+    with pytest.raises(ExperimentError):rows(p)
+
+
+def test_expected_evaluator_hash_is_enforced(bundle,tmp_path):
+    g,p,_=bundle;script=tmp_path/'spy.py';script.write_text('raise AssertionError("not invoked")')
+    with pytest.raises(ExperimentError,match='hash mismatch'):
+        evaluate(gold_path=g,predictions=p,evaluator=script,out=tmp_path/'out',model_id='x',experiment_id='x',evaluation_config={'expected_evaluator_sha256':'incorrect'})
+    assert json.loads((tmp_path/'out/manifest.json').read_text())['status']=='failed'
