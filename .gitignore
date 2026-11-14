@@ -41,3 +41,5 @@ baseline_pred.jsonl
 !/artifacts/
 /artifacts/*
 !/artifacts/README.md
+
+data/train_ready_v1/*.jsonl
