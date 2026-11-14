@@ -78,3 +78,72 @@ def test_cuda_synchronization_and_allocation_formula_with_fake_runtime(tmp_path,
     assert events.count('sync')>=8 and 'reset' in events
     assert result['peak_vram_bytes']==200 and result['synthetic']
     assert result['gpu_seconds_per_1000']==result['warm_wall_sec']*1000/2
+
+
+def test_foreign_prediction_is_not_schema_success(tmp_path):
+    class WrongCall:
+        extractor=MockExtractor()
+        def run(self,call):
+            prediction,warnings=Pipeline(self.extractor).run(call)
+            return prediction.model_copy(update={'call_id':'foreign-call'}),warnings
+    result=benchmark(lambda c:BenchmarkTarget(WrongCall(),'cpu',synthetic=True),[CALL],out=tmp_path/'wrong',config={},cold_trials=1,repeats=1)
+    assert result['successes']==0 and result['schema_valid_percent']==0
+
+
+def test_cleanup_failure_invalidates_completed_manifest_once(tmp_path):
+    closed=[]
+    def close():closed.append(1);raise RuntimeError('private engine detail')
+    with pytest.raises(RuntimeError):
+        benchmark(lambda c:BenchmarkTarget(Pipeline(MockExtractor()),'cpu',synthetic=True,close=close),[CALL],out=tmp_path/'close',config={},cold_trials=1,repeats=1)
+    assert closed==[1]
+    assert json.loads((tmp_path/'close/benchmark_manifest.json').read_text())['status']=='failed'
+    assert json.loads((tmp_path/'close/benchmark_summary.json').read_text())['status']=='failed'
+
+
+def test_intermediate_cleanup_is_not_repeated_on_failure(tmp_path):
+    closed=[]
+    def close():closed.append(1);raise RuntimeError('close failure')
+    with pytest.raises(RuntimeError):
+        benchmark(lambda c:BenchmarkTarget(Pipeline(MockExtractor()),'cpu',synthetic=True,close=close),[CALL],out=tmp_path/'close',config={},cold_trials=2,repeats=1)
+    assert closed==[1]
+
+
+def test_failed_warmup_invalidates_resource_comparison(tmp_path):
+    count=[]
+    class OnceBroken:
+        extractor=MockExtractor()
+        def run(self,call):
+            count.append(1)
+            if len(count)==2:raise RuntimeError('warmup failed')
+            return Pipeline(self.extractor).run(call)
+    result=benchmark(lambda c:BenchmarkTarget(OnceBroken(),'cpu',synthetic=True),[CALL],warmup_calls=[CALL],out=tmp_path/'warmup',config={},cold_trials=1,repeats=1)
+    assert not result['benchmark_valid'] and result['phase_errors']['warmup']==1
+
+
+def test_changed_model_between_cold_trials_rejected(tmp_path):
+    from src.pipeline.adapters import ModelDescriptor
+    count=[]
+    def build(c):
+        count.append(1);extractor=MockExtractor();extractor.descriptor=ModelDescriptor('model-'+str(len(count)),'mock')
+        return BenchmarkTarget(Pipeline(extractor),'cpu',synthetic=True)
+    with pytest.raises(ValueError):benchmark(build,[CALL],out=tmp_path/'changed',config={},cold_trials=2,repeats=1)
+
+
+def test_unawaited_async_pipeline_is_rejected_without_success(tmp_path):
+    class AsyncPipeline:
+        extractor=MockExtractor()
+        async def run(self,call):raise AssertionError('must not time a coroutine as completed inference')
+    result=benchmark(lambda c:BenchmarkTarget(AsyncPipeline(),'cpu',synthetic=True),[CALL],out=tmp_path/'async',config={},cold_trials=1,repeats=1)
+    raw=[json.loads(s) for s in (tmp_path/'async/benchmark_raw.jsonl').read_text().splitlines()]
+    assert result['successes']==0 and not result['benchmark_valid']
+    assert all(r['error_type']=='TypeError' for r in raw if r['phase'] in {'cold','warm'})
+
+
+def test_nonfinite_clock_cannot_create_complete_benchmark(tmp_path):
+    with pytest.raises(ValueError):
+        benchmark(lambda c:BenchmarkTarget(Pipeline(MockExtractor()),'cpu',synthetic=True),[CALL],out=tmp_path/'nan',config={},cold_trials=1,clock=lambda:float('nan'))
+    assert json.loads((tmp_path/'nan/benchmark_manifest.json').read_text())['status']=='failed'
+
+
+def test_declared_missing_checkpoint_is_error():
+    with pytest.raises(ValueError):checkpoint_size(['/this/checkpoint/does/not/exist'])

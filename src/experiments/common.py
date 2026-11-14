@@ -2,12 +2,18 @@
 import hashlib
 import importlib
 import json
+import math
 import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 
 class ExperimentError(ValueError):
     pass
+
+def finite_float(value):
+    number=float(value)
+    if not math.isfinite(number):raise ExperimentError('non-finite JSON number')
+    return number
 
 def sha(path):
     h = hashlib.sha256()
@@ -25,7 +31,7 @@ def read_json(path):
             if k in out: raise ExperimentError('duplicate JSON key')
             out[k]=v
         return out
-    return json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=pairs,
+    return json.loads(Path(path).read_text(encoding='utf-8'), object_pairs_hook=pairs, parse_float=finite_float,
         parse_constant=lambda _: (_ for _ in ()).throw(ExperimentError('non-finite JSON value')))
 
 def rows(path):
@@ -35,7 +41,7 @@ def rows(path):
             if not line.strip(): raise ExperimentError(f'blank JSONL line {line_no}')
             try:
                 # Reuse the same strict decoder, without including sensitive content in errors.
-                row = json.loads(line, object_pairs_hook=unique_keys,
+                row = json.loads(line, object_pairs_hook=unique_keys, parse_float=finite_float,
                     parse_constant=lambda _: (_ for _ in ()).throw(ValueError()))
                 cid = row['call_id']
                 if not isinstance(cid,str) or not cid.strip(): raise ValueError()

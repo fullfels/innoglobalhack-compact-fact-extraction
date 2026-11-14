@@ -1,5 +1,6 @@
 """Official evaluator wrapper. python -m src.experiments.evaluate --help"""
 import argparse
+from copy import deepcopy
 import json
 from pathlib import Path
 import subprocess
@@ -15,6 +16,7 @@ def features(row):
     return CallInput.model_validate({k:row[k] for k in CallInput.model_fields if k in row})
 
 def validate_record(row, call, *, gold=False):
+    if not gold and set(row)-set(CallInput.model_fields)-{'facts'}:raise ExperimentError('unknown prediction fields')
     if not isinstance(row.get('facts'),list): raise ExperimentError('facts must be an array')
     turns = {t.idx:t for t in call.turns}
     warnings=[]
@@ -31,7 +33,6 @@ def validate_record(row, call, *, gold=False):
                 if data['object'].get('type') not in {None,'service','device','ticket','client'}:
                     warnings.append({'fact_index':fact_index,'code':'GOLD_OPTIONAL_OBJECT_TYPE_OUTSIDE_SCHEMA'})
                     data['object'].pop('type')
-  # annotation field, not an inference feature
             data.setdefault('speaker', turn.speaker)
             fact = Fact.model_validate(data)
             if fact.speaker != turn.speaker: raise ValueError()
@@ -77,28 +78,36 @@ def generate(gold_path, pipeline, output):
 def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
              model_config=None, evaluation_config=None, dataset_version='unknown', mode='unknown',
              pipeline_factory=None, published_baseline=None, recomputed_baseline=None):
+    model_config=deepcopy(model_config or {});evaluation_config=deepcopy(evaluation_config or {})
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
     manifest={**identity(),'schema_version':'1','experiment_id':experiment_id,'model_id':model_id,'mode':mode,
-        'dataset':{'sha256':sha(gold_path),'version':dataset_version},'model_config':model_config or {},
-        'evaluation_config':evaluation_config or {},'evaluator_sha256':sha(evaluator),'status':'running'}
+        'dataset':{'sha256':None,'version':dataset_version},'model_config':model_config or {},
+        'evaluation_config':evaluation_config or {},'artifact':deepcopy(model_config.get('artifact',{})),'evaluator_sha256':None,'status':'running'}
     write_json(out/'manifest.json',manifest)
     (out/'evaluation.log').write_text('',encoding='utf-8')
     try:
+        manifest['dataset']['sha256']=sha(gold_path)
+        manifest['evaluator_sha256']=sha(evaluator)
+        expected=evaluation_config.get('expected_evaluator_sha256')
+        if expected and expected!=manifest['evaluator_sha256']:raise ExperimentError('evaluator hash mismatch')
         if pipeline_factory:
-            pipeline=factory(pipeline_factory)(model_config or {})
-            if pipeline.extractor.descriptor.model_id != model_id: raise ExperimentError('model_id does not match adapter')
-            manifest['mode']=pipeline.extractor.descriptor.mode
+            pipeline=factory(pipeline_factory)(deepcopy(model_config))
             adapter=pipeline.extractor
             try:
+                if adapter.descriptor.model_id != model_id: raise ExperimentError('model_id does not match adapter')
+                manifest['mode']=adapter.descriptor.mode
                 if callable(getattr(adapter,'load',None)):adapter.load()
                 if getattr(adapter,'state','unloaded')!='ready':raise ExperimentError('model not ready')
+                manifest['artifact'].update({k:v for k,v in getattr(adapter,'public_info',{}).items() if k in {'revision','hash','dtype','manifest_id'} and v is not None})
                 generate(gold_path,pipeline,out/'predictions.jsonl')
             finally:
                 if callable(getattr(adapter,'close',None)):adapter.close()
         else:
             # Copy bytes, not a dict keyed by call_id: duplicate IDs must remain detectable.
             (out/'predictions.jsonl').write_bytes(Path(predictions).read_bytes())
-        _,_,report=preflight(gold_path,out/'predictions.jsonl')
+        validated_predictions_hash=sha(out/'predictions.jsonl')
+        gold_records,pred_records,report=preflight(gold_path,out/'predictions.jsonl')
+        if sha(gold_path)!=manifest['dataset']['sha256']:raise ExperimentError('gold changed during run')
         write_json(out/'validation_report.json',report)
         if not report['valid']: raise ExperimentError('call_id coverage mismatch')
         config=evaluation_config or {}
@@ -108,10 +117,14 @@ def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
         # Successful official stdout contains aggregate metrics only. Do not expose failing script traceback/input.
         (out/'evaluation.log').write_text(result.stdout if result.returncode==0 else 'Official evaluator failed\n',encoding='utf-8')
         if result.returncode: raise ExperimentError('official evaluator failed')
+        if (sha(gold_path)!=manifest['dataset']['sha256'] or sha(evaluator)!=manifest['evaluator_sha256'] or sha(out/'predictions.jsonl')!=validated_predictions_hash):
+            raise ExperimentError('evaluation inputs changed after validation')
         metrics=read_json(out/'metrics.json')
         for key in METRICS:
             v=metrics[key]
             if v is not None and (type(v) not in (int,float) or not 0<=v<=1): raise ExperimentError('invalid evaluator metric')
+        for key,expected in {'n_calls':len(gold_records),'n_gold_facts':sum(len(r['facts']) for r in gold_records.values()),'n_pred_facts':sum(len(r['facts']) for r in pred_records.values())}.items():
+            if key in metrics and (type(metrics[key]) is not int or metrics[key]!=expected):raise ExperimentError('metric count mismatch')
         if published_baseline:
             write_json(out/'published_baseline.json',{'source':'organizer published; NOT local recomputation','metrics':read_json(published_baseline),'sha256':sha(published_baseline)})
         if recomputed_baseline:
@@ -121,7 +134,7 @@ def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
     except Exception as exc:
         manifest.update(status='failed',error_type=type(exc).__name__)
         if not (out/'validation_report.json').exists(): write_json(out/'validation_report.json',{'valid':False,'error_type':type(exc).__name__})
-        if not (out/'metrics.json').exists(): write_json(out/'metrics.json',{'status':'not_evaluated'})
+        write_json(out/'metrics.json',{'status':'not_evaluated','error_type':type(exc).__name__})
         with (out/'evaluation.log').open('a') as f:f.write('Experiment failed: '+type(exc).__name__+'\n')
         raise
     finally: write_json(out/'manifest.json',manifest)
