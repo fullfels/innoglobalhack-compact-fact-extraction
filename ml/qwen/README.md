@@ -82,6 +82,12 @@ Factory возвращает существующий Pipeline с ManagedAdapter
 
 Необходимы отдельные real HTTP/Docker acceptance и CPU/GPU benchmarks. Фиктивный engine в unit-тесте не закрывает эти проверки. Квантование/три точки ресурсов и анализ temporal/state ошибок выполняются после реального SFT.
 
+## Разбор ошибок по типам фактов
+
+`python -m ml.qwen.analyze_results --gold <pilot/dev_8.jsonl> --prediction-dir <run/after_dev> --evaluator <evaluation/case_metrics.py> --output <private/error_analysis.json>` использует неизменённый официальный matcher/evaluator и сохраняет его hash. Проверяет совпадение ID и predictions с raw records. Для парной диагностики из двух звонков требуется явный `--select-prediction-ids`; исходное число gold-звонков остаётся в отчёте.
+
+Срезы: переходы состояния (несколько значений или закрытый интервал), одиночные значения атрибутов внутри звонка, действия/договорённости как отдельные события. Одиночное значение не объявляется неизменным свойством объекта. Показываются пропуски/лишние предсказания, даты и source среди совпавших, знаменатели, structural failures отдельно от ошибок сопоставленных фактов. Known limitations официального matcher сохраняются и явно указываются; это диагностический разбор, не новая официальная метрика. Raw traces и результаты остаются вне Git.
+
 ## Первичные источники реализации
 
 - Transformers v5.3.0: [официальный Qwen3.5 forward и logits_to_keep](https://github.com/huggingface/transformers/blob/v5.3.0/src/transformers/models/qwen3_5/modeling_qwen3_5.py).
