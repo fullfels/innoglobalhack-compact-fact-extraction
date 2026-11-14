@@ -20,9 +20,13 @@ This clears the original P2. Historical parser incompatibilities do not block an
 | #51 | 26f5c23 | fs/benchmark-collector | open, CI success, no peer approval |
 | #52 | 4958f94 | main | open, CI success, approved archive |
 | #53 | b95cfce | fs/deep-integration-audit | **new ML bridge, draft**, CI success |
-| #54 | ed9e110 | ml/t20-qwen35-candidate-bridge-20261114 | **new LoRA pilot code, draft**, CI success; training not executed here |
+| #54 | **7fffa46** (updated during review) | ml/t20-qwen35-candidate-bridge-20261114 | **LoRA pilot/numerics code, draft**, CI success; training not executed here |
 
 No DE PR/normalizer implementation or local checkpoint/export/tokenizer/HF cache found. main remains c8911a99936de3d7a06c5327e55abcc5fa28694e. Separate FS branch `codex/qwen-acceptance` starts from #53 and includes latest #50 fix; all current #46–#51 heads are ancestors. No main merge, force push, ML/DE source edits or training.
+
+Acceptance is published as draft [PR #55](https://github.com/fullfels/innoglobalhack-compact-fact-extraction/pull/55), base #53. Code head 090a859 CI [43603644521](https://github.com/fullfels/innoglobalhack-compact-fact-extraction/actions/runs/43603644521) and separate PR run 43603760706 succeeded: 181 Python passed/2 external official-file tests skipped, 5 JS passed, Docker/HTTP PASS. Local original-file tests all ran. Subsequent report-only update does not change acceptance code.
+
+Latest #54 7fffa46 changes the proposed pilot default to FP32 and adds numerics_probe after ML-reported FP16 gradient overflows/dev-loss regression. These are reported observations, not independently repeated GPU measurements here. Its runtime now accepts manifest dtype; acceptance snapshot intentionally stays on #53 b95cfce and does not silently import draft training changes. ML must hand off the approved runtime version matching the actual export dtype and a genuinely successful numerical/pilot/reload result. No successful training/export is inferred from green code-only CI.
 
 Safe main merge order after peer approvals and separate owner permission: #46 → #47 → #48 → #49 → #50 → #51; #52 independent archive. Retarget dependent bases and repeat CI. #53/#54 remain draft dependencies, not accepted real deployment. They must pick up #50 metadata fix in a normal branch update; no ML branch was pushed by FS.
 
