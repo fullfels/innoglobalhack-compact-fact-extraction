@@ -9,7 +9,7 @@ class Contract(BaseModel):
 class Turn(Contract):
     idx: int = Field(ge=0, strict=True)
     speaker: Literal['client', 'operator']
-    text: str = Field(min_length=1)
+    text: str  # Official ASR turns may be empty; preserve idx and text verbatim.
 
 class Series(Contract):
     account_id: str = Field(min_length=1)

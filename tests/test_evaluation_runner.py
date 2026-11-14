@@ -111,3 +111,23 @@ def test_factory_load_once_and_release_without_gold(bundle,tmp_path,monkeypatch,
         with pytest.raises(RuntimeError):evaluate(**kwargs)
     else:evaluate(**kwargs)
     assert events==['load','close'] and adapter.state=='unloaded'
+
+
+def test_empty_asr_turn_is_preserved_not_dropped_or_renumbered(bundle):
+    _,_,row=bundle
+    row['turns'].insert(0,{'idx':3,'speaker':'operator','text':''})
+    call=features(row)
+    assert [t.idx for t in call.turns]==[3,7]
+    assert call.turns[0].text==''
+    assert json.loads(call.model_dump_json())['turns'][0]['text']==''
+
+
+def test_gold_optional_type_anomaly_is_reported_without_relaxing_predictions(bundle):
+    g,p,row=bundle
+    row['facts'][0]['object']['type']='other'
+    g.write_text(json.dumps(row)+'\n')
+    report=preflight(g,p)[2]
+    assert report['valid'] and report['gold_annotation_warnings'][0]['warnings'][0]['code']=='GOLD_OPTIONAL_OBJECT_TYPE_OUTSIDE_SCHEMA'
+    assert json.loads(g.read_text())['facts'][0]['object']['type']=='other'
+    p.write_text(json.dumps(row)+'\n')
+    with pytest.raises(ExperimentError):preflight(g,p)
