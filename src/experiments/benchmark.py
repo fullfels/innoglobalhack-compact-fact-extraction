@@ -1,5 +1,7 @@
 """Sequential batch=1 pipeline benchmark, raw samples are the source of summaries."""
 import argparse
+from copy import deepcopy
+import inspect
 from dataclasses import dataclass, field
 import importlib.metadata
 import json
@@ -14,6 +16,7 @@ import threading
 import time
 from typing import Callable
 from src.contracts.models import CallPrediction
+from src.pipeline.service import validate_output
 from .common import factory, identity, read_json, rows, sha, write_json
 from .evaluate import features
 
@@ -32,7 +35,7 @@ def rss_bytes():
             for line in Path('/proc/self/status').read_text().splitlines():
                 if line.startswith('VmRSS:'): return int(line.split()[1])*1024
         if sys.platform == 'darwin':
-            return int(subprocess.check_output(['ps','-o','rss=','-p',str(os.getpid())],text=True))*1024
+            return int(subprocess.check_output(['ps','-o','rss=','-p',str(os.getpid())],text=True,timeout=1))*1024
     except (OSError,ValueError,subprocess.SubprocessError): pass
     return None
 
@@ -64,7 +67,8 @@ def summarize(raw):
     durations=sorted(r['elapsed_sec'] for r in good)
     windows=[r['elapsed_sec'] for r in raw if r['phase']=='warm_run']
     wall=sum(windows) if windows else sum(r['elapsed_sec'] for r in warm)
-    return {'attempts':len(warm),'successes':len(good),'errors':len(warm)-len(good),
+    phase_errors={phase:sum(r.get('status')=='error' for r in raw if r['phase']==phase) for phase in ['load','cold','warmup','warm','close']}
+    return {'phase_errors':phase_errors,'benchmark_valid':bool(warm) and not any(phase_errors.values()),'attempts':len(warm),'successes':len(good),'errors':len(warm)-len(good),
         'schema_valid_percent':100*sum(r['schema_valid'] for r in warm)/len(warm) if warm else None,
         'mean_latency_sec':statistics.mean(durations) if durations else None,
         'median_latency_sec':statistics.median(durations) if durations else None,
@@ -80,22 +84,33 @@ def checkpoint_size(paths):
     files=set()
     for name in paths:
         p=Path(name)
-        if not p.exists():return None
+        if not p.exists():raise ValueError('declared checkpoint path missing')
         files.update(x.resolve() for x in (p.rglob('*') if p.is_dir() else [p]) if x.is_file())
     return sum(p.stat().st_size for p in files)
 
 def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, repeats=3, cold_trials=3,
               clock=time.perf_counter, exclusive_gpu=False, experiment_id='benchmark'):
     if repeats<1 or cold_trials<1:raise ValueError('positive repeats/cold_trials required')
+    config=deepcopy(config)
     calls=tuple(calls);warmup_calls=tuple(warmup_calls or ())
     if not calls:raise ValueError('empty benchmark inputs')
     out=Path(out);out.mkdir(parents=True,exist_ok=False)
-    hw=hardware(device);raw=[];target=None;cuda=None
-    manifest={**identity(),'experiment_id':experiment_id,'config':config,'device':device,'batch':1,'concurrency':1,
+    hw=hardware(device);raw=[];target=None;cuda=None;memory=None;target_identity=None
+    manifest={**identity(),'experiment_id':experiment_id,'config':deepcopy(config),'device':device,'batch':1,'concurrency':1,
         'repeats':repeats,'cold_trials':cold_trials,'warmup_calls':len(warmup_calls),
         'call_ids':[c.call_id for c in calls],'warmup_ids':[c.call_id for c in warmup_calls],
         'status':'running','gpu_allocation':'exclusive one GPU' if exclusive_gpu else 'not asserted'}
     write_json(out/'hardware.json',hw)
+    def close_target():
+        nonlocal target
+        current,target=target,None
+        if current is None:return
+        try:
+            current.close()
+            raw.append({'phase':'close','status':'ok'})
+        except Exception as exc:
+            raw.append({'phase':'close','status':'error','error_type':type(exc).__name__})
+            raise
     try:
         if device!='cpu':
             if not device.startswith('cuda:'):raise ValueError('supported devices: cpu or explicit cuda:N')
@@ -110,15 +125,22 @@ def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, rep
                 return None
         def sync():
             if cuda:cuda.synchronize(device)
-        def measured(phase,fn,repeat=0,cid=None):
+        def measured(phase,fn,repeat=0,cid=None,expected_call=None):
             sync();start=clock();status='ok';valid=False;error_type=None;result=None
             try:
                 result=fn()
-                if phase!='load':CallPrediction.model_validate(result[0]);valid=True
+                if inspect.isawaitable(result):
+                    if inspect.iscoroutine(result):result.close()
+                    raise TypeError('synchronous completed pipeline required')
+                if phase!='load':
+                    prediction=CallPrediction.model_validate(result[0])
+                    if features(prediction.model_dump())!=expected_call:raise ValueError('prediction input mismatch')
+                    validate_output(expected_call,prediction.facts)
+                    valid=True
             except Exception as exc:status='error';error_type=type(exc).__name__
             finally:sync()
             elapsed=clock()-start
-            if elapsed<0:raise ValueError('clock moved backwards')
+            if not math.isfinite(elapsed) or elapsed<0:raise ValueError('invalid elapsed time')
             raw.append({'phase':phase,'repeat':repeat,'call_id':cid,'elapsed_sec':elapsed,'status':status,'schema_valid':valid,'error_type':error_type})
             if phase=='load' and status!='ok':raise RuntimeError('loader failed')
             return result
@@ -126,19 +148,26 @@ def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, rep
         with MemorySampler() as memory:
             for trial in range(cold_trials):
                 begin=clock()
-                target=measured('load',lambda:build({**config,'device':device}),trial)
+                target=measured('load',lambda:build({**deepcopy(config),'device':device}),trial)
                 if target.device!=device:raise ValueError('factory device mismatch')
-                manifest.update(model_id=target.pipeline.extractor.descriptor.model_id,mode=target.pipeline.extractor.descriptor.mode,
-                    engine=target.pipeline.extractor.descriptor.engine,synthetic=target.synthetic or target.pipeline.extractor.descriptor.mode=='mock')
-                measured('cold',lambda:target.pipeline.run(calls[0]),trial,calls[0].call_id)
+                if target.parameters is not None and (type(target.parameters) is not int or target.parameters<0):raise ValueError('invalid parameter count')
+                descriptor=target.pipeline.extractor.descriptor
+                artifact=deepcopy(config.get('artifact',{}))
+                artifact.update({k:v for k,v in getattr(target.pipeline.extractor,'public_info',{}).items() if k in {'revision','hash','dtype','manifest_id'} and v is not None})
+                current_identity={'model_id':descriptor.model_id,'mode':descriptor.mode,'engine':descriptor.engine,
+                    'synthetic':bool(target.synthetic or descriptor.mode=='mock'),'artifact':artifact,'parameters':target.parameters,
+                    'checkpoint_bytes':checkpoint_size(target.checkpoint_paths)}
+                if target_identity is not None and current_identity!=target_identity:raise ValueError('target identity changed between trials')
+                target_identity=current_identity
+                manifest.update(current_identity)
+                measured('cold',lambda:target.pipeline.run(calls[0]),trial,calls[0].call_id,expected_call=calls[0])
                 raw.append({'phase':'cold_start','elapsed_sec':clock()-begin,'repeat':trial})
-                if trial<cold_trials-1:target.close();target=None
-            for call in warmup_calls:measured('warmup',lambda:target.pipeline.run(call),cid=call.call_id)
+                if trial<cold_trials-1:close_target()
+            for call in warmup_calls:measured('warmup',lambda:target.pipeline.run(call),cid=call.call_id,expected_call=call)
             for repeat in range(repeats):
                 sync();begin=clock()
-                for call in calls:measured('warm',lambda:target.pipeline.run(call),repeat,call.call_id)
+                for call in calls:measured('warm',lambda:target.pipeline.run(call),repeat,call.call_id,expected_call=call)
                 sync();raw.append({'phase':'warm_run','repeat':repeat,'elapsed_sec':clock()-begin})
-        raw.extend(memory.samples)
         summary=summarize(raw)
         summary.update(status='complete',synthetic=manifest['synthetic'],device=device,peak_ram_bytes=memory.peak,
             ram_status='measured' if memory.peak is not None else 'not_measured',parameters=target.parameters,
@@ -157,8 +186,16 @@ def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, rep
         raise
     finally:
         try:
-            if target:target.close()
+            was_failed=manifest['status']=='failed'
+            try:close_target()
+            except Exception as exc:
+                manifest.update(status='failed',cleanup_error_type=type(exc).__name__)
+                failed=read_json(out/'benchmark_summary.json')
+                failed.update(status='failed',benchmark_valid=False,cleanup_error_type=type(exc).__name__)
+                write_json(out/'benchmark_summary.json',failed)
+                if not was_failed:raise
         finally:
+            if memory is not None:raw.extend(memory.samples)
             with (out/'benchmark_raw.jsonl').open('w') as f:
                 for row in raw:f.write(json.dumps(row,allow_nan=False)+'\n')
             write_json(out/'hardware.json',hw)
@@ -172,10 +209,10 @@ def main():
     p.add_argument('--cold-trials',type=int,default=3);p.add_argument('--exclusive-gpu',action='store_true')
     a=p.parse_args()
     try:
-        benchmark(factory(a.factory),[features(r) for r in rows(a.inputs).values()],out=a.out,config=read_json(a.config),device=a.device,
+        result=benchmark(factory(a.factory),[features(r) for r in rows(a.inputs).values()],out=a.out,config=read_json(a.config),device=a.device,
             warmup_calls=[features(r) for r in rows(a.warmup_inputs).values()] if a.warmup_inputs else (),
             repeats=a.repeats,cold_trials=a.cold_trials,exclusive_gpu=a.exclusive_gpu,experiment_id=a.experiment_id)
-        return 0
+        return 2 if result is not None and not result.get('benchmark_valid',False) else 0
     except Exception as exc:print('Benchmark failed: '+type(exc).__name__,file=sys.stderr);return 2
 
 if __name__=='__main__':sys.exit(main())
