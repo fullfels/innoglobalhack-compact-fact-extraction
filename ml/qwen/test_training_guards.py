@@ -1,6 +1,16 @@
 """Run-state regression tests only; no Torch import or simulated quality scores."""
 import json
-from ml.qwen.train import record_failure
+from ml.qwen.train import record_failure, diagnostic_subset
+import pytest
+
+
+def test_paired_diagnostic_subset_uses_stable_prefix_without_label_selection():
+    calls = [{"call_id": str(i), "facts": ["different labels"] * i} for i in range(6)]
+    assert diagnostic_subset(calls, 2) == calls[:2]
+    assert diagnostic_subset(calls, 10) == calls
+    assert len(calls) == 6
+    with pytest.raises(ValueError):
+        diagnostic_subset(calls, 0)
 
 
 def test_existing_successful_run_is_immutable_when_new_attempt_refused(tmp_path):

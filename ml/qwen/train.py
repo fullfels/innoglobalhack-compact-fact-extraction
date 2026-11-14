@@ -109,6 +109,7 @@ def quality_run(model, tokenizer, calls, data_root, out, *, max_new_tokens=1536)
     records, predictions, serving_predictions = [], [], []
     for raw_call in calls:
         call = input_call(raw_call)
+        print("evaluation_start", call.call_id, flush=True)
         record = {"call_id": call.call_id, "status": "ok", "raw": None, "error_code": None, "facts": None}
         torch.cuda.synchronize(); start = time.perf_counter()
         try:
@@ -140,7 +141,8 @@ def quality_run(model, tokenizer, calls, data_root, out, *, max_new_tokens=1536)
         serving_predictions.append({"call_id": call.call_id, "facts": record.get("serving_facts", []) if record["status"] == "ok" else []})
         name = hashlib.sha256(call.call_id.encode()).hexdigest()[:20]
         save(out / "records" / (name + ".json"), record)
-        print("evaluation", call.call_id, record["status"], "facts", len(record["facts"] or []), flush=True)
+        print("evaluation", call.call_id, record["status"], "facts", len(record["facts"] or []),
+              "error", record["error_code"], "seconds", round(record["elapsed_sec"], 2), flush=True)
     with (out / "predictions.jsonl").open("w", encoding="utf-8", newline="\n") as f:
         for r in predictions: f.write(json.dumps(r, ensure_ascii=False) + "\n")
     with (out / "serving_predictions.jsonl").open("w", encoding="utf-8", newline="\n") as f:
@@ -157,6 +159,13 @@ def quality_run(model, tokenizer, calls, data_root, out, *, max_new_tokens=1536)
               "measurement_scope": "Raw extraction; agreement confirmation/state/date DE normalizers are not connected. Not end-to-end serving acceptance."}
     save(out / "metrics.json", report)
     return report
+
+
+def diagnostic_subset(calls, limit):
+    """A fixed prefix chosen by count, without inspecting labels or predictions."""
+    if limit < 1:
+        raise ValueError("Diagnostic count must be positive")
+    return calls[:limit]
 
 
 def teacher_loss(model, rows):
@@ -197,8 +206,10 @@ def main():
     ap.add_argument("--learning-rate", type=float, default=2e-4)
     ap.add_argument("--budget-hours", type=float, default=4)
     ap.add_argument("--full-eval", action="store_true")
+    ap.add_argument("--baseline-count", type=int, default=2,
+                    help="Fixed train/dev prefix for paired before/after diagnostics; not full quality evaluation")
     args = ap.parse_args()
-    if args.steps < 1 or (args.accumulation is not None and args.accumulation < 1) or args.learning_rate <= 0 or args.budget_hours <= 0:
+    if args.steps < 1 or args.baseline_count < 1 or (args.accumulation is not None and args.accumulation < 1) or args.learning_rate <= 0 or args.budget_hours <= 0:
         ap.error("steps/accumulation/learning-rate/budget-hours must be positive")
     import torch
     from peft import LoraConfig, PeftModel, get_peft_model
@@ -221,6 +232,8 @@ def main():
     config = {"phase": args.phase, "seed": seed, "base_model": MODEL, "base_revision": REVISION,
               "dtype": "float16", "quantization": None, "rank": 16, "alpha": 32, "dropout": 0.,
               "learning_rate": args.learning_rate, "accumulation": args.accumulation or (2 if args.phase == "pilot" else 4),
+              "baseline_diagnostic_count_per_split": args.baseline_count,
+              "diagnostic_policy": "Fixed first N calls, identical before/after; full after-train and inner-dev measured separately. Count reduced after measured 122s runaway base generation; no metric representativeness claim.",
               "gradient_checkpointing": True, "training_context": 8192 if args.phase == "pilot" else 16384,
               "budget_hours": args.budget_hours, "dataset_manifest_sha256": sha(data_root / "manifest.json"),
               "source_sha256": {name: sha(Path(__file__).with_name(name)) for name in ("train.py", "bridge.py", "runtime.py", "prompting.py")},
@@ -251,8 +264,11 @@ def main():
     save(args.out / "training_config.json", config)
     equivalence = check_loss_equivalence(model, tokenizer)
     save(args.out / "loss_equivalence.json", equivalence)
-    before_train = quality_run(model, tokenizer, train_raw if args.phase == "pilot" else train_raw[:1], data_root, args.out / "before_train")
-    before_dev = quality_run(model, tokenizer, dev_raw if args.phase == "pilot" else dev_raw[:10], data_root, args.out / "before_dev")
+    diagnostic_train = diagnostic_subset(train_raw, args.baseline_count)
+    diagnostic_dev = diagnostic_subset(dev_raw, args.baseline_count)
+    print("stage before_training_diagnostics", len(diagnostic_train), len(diagnostic_dev), flush=True)
+    before_train = quality_run(model, tokenizer, diagnostic_train, data_root, args.out / "before_train")
+    before_dev = quality_run(model, tokenizer, diagnostic_dev, data_root, args.out / "before_dev")
     if args.phase == "main" and args.full_eval:
         quality_run(model, tokenizer, read(data_root / "evaluation/val.jsonl"), data_root, args.out / "official_val_before")
     model.config.use_cache = False
@@ -264,6 +280,7 @@ def main():
     accumulation = config["accumulation"]
     steps = args.steps if args.phase == "pilot" else math.ceil(len(train_rows) / accumulation)
     initial_dev = teacher_loss(model, dev_rows)
+    print("stage optimizer_training", "steps", steps, "initial_dev_loss", initial_dev, flush=True)
     best_loss, best_step = initial_dev, None
     order = list(range(len(train_rows))); random.Random(seed).shuffle(order)
     position = 0; logs = []
@@ -339,12 +356,12 @@ def main():
     save(args.out / "reload_test.json", reload_result)
     after_train = quality_run(model, tokenizer, train_raw if args.phase == "pilot" else train_raw[:1], data_root, args.out / "after_train")
     after_dev = quality_run(model, tokenizer, dev_raw, data_root, args.out / "after_dev")
-    if args.phase == "main":
-        quality_run(model, tokenizer, dev_raw[:10], data_root, args.out / "after_dev_same_diagnostic10")
+    after_diagnostic_train = quality_run(model, tokenizer, diagnostic_train, data_root, args.out / "after_train_same_diagnostic")
+    after_diagnostic_dev = quality_run(model, tokenizer, diagnostic_dev, data_root, args.out / "after_dev_same_diagnostic")
     gates = {"loss_equivalence": equivalence["passed"], "reload": reload_result["passed"],
              "fifty_timing_steps_measured": len(timing) == 50,
              "dev_loss_improved": best_step is not None,
-             "train_fact_recall_improved": after_train["metrics"]["fact_recall"] > before_train["metrics"]["fact_recall"],
+             "paired_diagnostic_train_recall_improved": after_diagnostic_train["metrics"]["fact_recall"] > before_train["metrics"]["fact_recall"],
              "train_fact_recall_at_least_half": after_train["metrics"]["fact_recall"] >= .5,
              "multiple_facts_generated": after_train["valid_multifact_calls"] > 0,
              "after_train_failures_zero": after_train["failed_generations"] == 0,
@@ -357,6 +374,8 @@ def main():
               "eta_note": "Measured last50 steps; one full epoch plus20% margin, estimate not guarantee.",
               "long_call_probe": long_probe, "before_train": before_train, "after_train": after_train,
               "before_dev": before_dev, "after_dev": after_dev, "reload": reload_result,
+              "paired_diagnostics": {"before_train": before_train, "after_train": after_diagnostic_train,
+                                     "before_dev": before_dev, "after_dev": after_diagnostic_dev},
               "full_official_val_run": False, "serving_confirmation_resolved": False}
     save(args.out / ("pilot.json" if args.phase == "pilot" else "sft_report.json"), report)
     export = args.out / "export"; shutil.copytree(selected, export, dirs_exist_ok=True)
