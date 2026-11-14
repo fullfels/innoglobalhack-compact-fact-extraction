@@ -55,7 +55,7 @@ cd innoglobalhack-compact-fact-extraction
 | data | Правила получения данных, manifests, независимые fixtures |
 | ml | Будущие configs/training/evaluation/experiment manifests |
 | artifacts | Инструкция хранения весов вне Git |
-| tests, scripts | 66 тестов текущего snapshot и HTTP smoke |
+| tests, scripts | 70 Python-тестов, 5 JS-тестов и HTTP smoke |
 | .github | Существующий CI, ownership и PR/issue templates |
 | docs | Спецификация, план, handoff и backlog |
 
@@ -66,3 +66,16 @@ cd innoglobalhack-compact-fact-extraction
 [CONTRIBUTING](CONTRIBUTING.md) · [Командный workflow](docs/TEAM_WORKFLOW.md) · [Данные](data/README.md) · [Веса](artifacts/README.md) · [ML handoff](ml/README.md) · [Результат реализации MVP](docs/IMPLEMENTATION_REPORT.md).
 
 Исходный датасет и материалы организаторов получать отдельно по data/README; в Git только код, документация, hashes и независимые fixtures. Секреты, private logs и checkpoints не публиковать. Model volume не заменяет реализацию ML bridge. Подробная настройка GitHub и ограничения — docs/GITHUB_SETUP_REPORT.md.
+
+
+## Regression tests R01–R03
+
+```bash
+pytest -q                         # 69 Python cases; Docker sentinel skipped
+MWS_DOCKER_TESTS=1 pytest -q        # all 70 cases, requires Docker
+node --test tests/frontend.test.cjs # 5 UI controller cases, Node.js 22+
+```
+
+Node нужен только для тестов, frontend по-прежнему работает без сборки. Sentinel-тест копирует только tracked sources во временный каталог, добавляет фиктивные credentials/weights и проверяет их отсутствие в context/image; настоящие секреты не читает. CI запускает Python+Docker и JS regression tests.
+
+Detached inference failure логируется один раз с request_id/module/error_code/error_type, без сообщения исключения. Изменение диалога очищает результат; ответ начатого ранее запроса не отображается после изменения ввода. DE/ML contracts не менялись.

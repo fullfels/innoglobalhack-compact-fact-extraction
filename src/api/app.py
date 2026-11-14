@@ -1,3 +1,6 @@
+import asyncio
+import importlib
+import os
 from contextlib import asynccontextmanager
 import hashlib
 import json
@@ -12,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from src.api.config import Settings
 from src.contracts.models import CallInput, ExtractResponse, Meta
 from src.pipeline.adapters import MockExtractor, PendingRealAdapter, PipelineError, ModelDescriptor
-from src.api.worker import InferenceWorker
+from src.api.worker import InferenceWorker, drain_task
 from src.pipeline.service import Pipeline
 
 logger = logging.getLogger('mws')
@@ -22,6 +25,10 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def create_app(settings: Settings | None = None, pipeline: Pipeline | None = None) -> FastAPI:
     settings = settings or Settings.from_env()
+    if pipeline is None and os.getenv('MWS_PIPELINE_FACTORY'):
+        module,sep,name=os.environ['MWS_PIPELINE_FACTORY'].partition(':')
+        if not sep:raise ValueError('MWS_PIPELINE_FACTORY must be module:function')
+        pipeline=getattr(importlib.import_module(module),name)()
     pipeline = pipeline or Pipeline(MockExtractor() if settings.mode == 'mock' else PendingRealAdapter())
     descriptor = getattr(pipeline.extractor, 'descriptor', None)
     if descriptor is None:
@@ -33,17 +40,47 @@ def create_app(settings: Settings | None = None, pipeline: Pipeline | None = Non
         raise ValueError('Configured mode disagrees with extractor descriptor')
     worker = InferenceWorker(pipeline)
 
+    load_failed=False
+
+    def lifecycle_error(event,exc):
+        logger.error(json.dumps({'event':event,'module':getattr(exc,'module','loader'),
+            'error_code':getattr(exc,'code','MODEL_LIFECYCLE_FAILED'),
+            'error_type':getattr(exc,'error_type',None) or type(exc).__name__}))
+
     @asynccontextmanager
     async def lifespan(app):
+        nonlocal load_failed
+        adapter=pipeline.extractor
+        load_task=None
         try:
+            if callable(getattr(adapter,'load',None)):
+                load_task=asyncio.create_task(asyncio.to_thread(adapter.load))
+                try:await asyncio.shield(load_task)
+                except Exception as exc:
+                    load_failed=True
+                    lifecycle_error('model_load_failed',exc)
             yield
         finally:
-            await worker.close()
+            async def cleanup():
+                nonlocal load_failed
+                if load_task is not None:
+                    try:await load_task
+                    except Exception as exc:
+                        if not load_failed:
+                            load_failed=True
+                            lifecycle_error('model_load_failed',exc)
+                await worker.close()
+                if callable(getattr(adapter,'close',None)):
+                    try:await asyncio.to_thread(adapter.close)
+                    except Exception as exc:lifecycle_error('model_close_failed',exc)
+            await drain_task(asyncio.create_task(cleanup()))
 
     app = FastAPI(title='MWS CompactFactExtraction', version='0.1.0', lifespan=lifespan)
     app.state.worker = worker
 
     def model_state():
+        if worker.closing or getattr(pipeline.extractor,'stopping',False):return 'stopping'
+        if load_failed:return 'failed'
         return getattr(pipeline.extractor, 'state', 'ready' if descriptor.mode == 'mock' else 'unloaded')
 
     @app.middleware('http')
@@ -79,7 +116,7 @@ def create_app(settings: Settings | None = None, pipeline: Pipeline | None = Non
 
     @app.get('/model/info')
     def info():
-        return {'model_id': descriptor.model_id, 'mode': descriptor.mode, 'is_mock': descriptor.mode == 'mock', 'model_state': model_state(), 'artifact': None, 'revision': None, 'hash': None, 'parameters': None, 'dtype': None, 'engine': descriptor.engine, 'context': None, 'manifest_id': None, 'limits': {'body_bytes': settings.max_body_bytes, 'turns': 500, 'concurrency': 1, 'queue': 0}}
+        return {'model_id': descriptor.model_id, 'mode': descriptor.mode, 'is_mock': descriptor.mode == 'mock', 'model_state': model_state(), 'artifact': None, **{k:getattr(pipeline.extractor,'public_info',{}).get(k) for k in ['revision','hash','parameters','dtype','context','manifest_id']}, 'engine': descriptor.engine, 'limits': {'body_bytes': settings.max_body_bytes, 'turns': 500, 'concurrency': 1, 'queue': 0}}
 
     @app.post('/extract', response_model=ExtractResponse)
     async def extract(call: CallInput, request: Request):
@@ -87,7 +124,10 @@ def create_app(settings: Settings | None = None, pipeline: Pipeline | None = Non
             raise PipelineError('MODEL_NOT_READY', 503, 'extractor')
         started = perf_counter()
         try:
-            prediction, warnings = await worker.run(call)
+            prediction, warnings = await asyncio.wait_for(
+                worker.run(call, request_id=request.state.request_id), timeout=settings.inference_timeout_sec)
+        except TimeoutError:
+            raise PipelineError('INFERENCE_TIMEOUT_SLOT_RETAINED',504,'worker') from None
         except PipelineError:
             raise
         except Exception as exc:
