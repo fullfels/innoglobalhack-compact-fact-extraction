@@ -1,5 +1,7 @@
 # Integrated system status — 2026-11-14
 
+Последняя проверка: [QWEN_ACCEPTANCE_STATUS.md](QWEN_ACCEPTANCE_STATUS.md). PR #52 на 4958f94 получил официальный APPROVE после независимых mutation tests; появились draft #53 bridge и #54 pilot. Отдельная FS-ветка codex/qwen-acceptance включает bridge и metadata fix #50 (56303b0), full suite 183 passed. Реальных артефактов/reload/inference пока нет. Предшествующие отчёты ниже сохраняются как история.
+
 Дополнение после появления PR #52: [PR52_INTEGRATION_REVIEW.md](PR52_INTEGRATION_REVIEW.md). Архивный 10-call Qwen smoke независимо пересчитан; request changes по source provenance. Новый FS verifier и 7 tests не меняют ML source или serving contracts. Текущий full local suite — 154 passed, 0 skipped; real serving и T20 по-прежнему не готовы без ML package. Данные основного отчёта ниже относятся к предшествующему snapshot.
 
 ## Итог и границы

@@ -1,5 +1,7 @@
 # Первый Qwen inference: проверяемая передача и запуск
 
+Актуальное дополнение с появившимся ML bridge #53, его точной factory/env и executable offline acceptance (`scripts.real_smoke --factory`): [QWEN_ACCEPTANCE_STATUS.md](QWEN_ACCEPTANCE_STATUS.md). Оно уточняет прежние placeholders ниже: runtime читает MTS_MODEL_DIR/model_manifest.json; API artifact hash — SHA256 этого manifest. Config-aware evaluation/benchmark factories ещё требуется передать. Не путать архив #52 с production bridge.
+
 Этот runbook использует существующие ManagedAdapter, Pipeline, FastAPI и experiment CLI. Конкретный Qwen loader/bridge поставляет ML Engineer. Пока артефактов нет, команды real inference не выполняются, T20 остаётся открытой. Конфигурации, веса, входы и результаты хранятся вне Git.
 
 ## 1. Проверенный код и merge gate

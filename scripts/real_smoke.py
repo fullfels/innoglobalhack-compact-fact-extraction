@@ -1,4 +1,4 @@
-"""Check an already-running real API; never load or substitute a model.
+"""Check a real API, or reload an approved ML factory with --factory.
 
 Run with python -m scripts.real_smoke. Outputs contain private transcript data.
 """
@@ -15,7 +15,8 @@ from src.experiments.common import ExperimentError, identity, read_json, sha, wr
 from src.pipeline.service import validate_output
 
 
-def real_smoke(*, url, input_path, out, model_id, artifact_sha256, raw_model=False, timeout_sec=120):
+def real_smoke(*, url, input_path, out, model_id, artifact_sha256, raw_model=False, timeout_sec=120,
+               request_json=None):
     if not re.fullmatch('[0-9a-fA-F]{64}', artifact_sha256):
         raise ExperimentError('expected artifact SHA256 required')
     if not math.isfinite(timeout_sec) or timeout_sec <= 0:
@@ -24,9 +25,11 @@ def real_smoke(*, url, input_path, out, model_id, artifact_sha256, raw_model=Fal
     out.mkdir(parents=True, exist_ok=False)
     manifest = {**identity(), 'experiment_type': 'raw-model' if raw_model else 'pipeline',
                 'model_id': model_id, 'mode': 'real', 'expected_artifact_sha256': artifact_sha256,
-                'status': 'running'}
+                'status': 'running', 'transport': 'in-process-asgi' if request_json else 'http'}
 
     def http(path, payload=None):
+        if request_json is not None:
+            return request_json(path, payload)
         request = Request(url.rstrip('/') + path,
                           data=json.dumps(payload).encode('utf-8') if payload is not None else None,
                           headers={'Content-Type': 'application/json'})
@@ -75,17 +78,47 @@ def real_smoke(*, url, input_path, out, model_id, artifact_sha256, raw_model=Fal
         write_json(out / 'manifest.json', manifest)
 
 
+def offline_smoke(*, pipeline_factory, **options):
+    """Reload the actual factory in one process and exercise the existing API.
+
+    No replacement engine: ML owns the factory and its offline loading policy.
+    Lifespan loads once and releases before this function returns, including on failure.
+    """
+    from fastapi.testclient import TestClient
+    from src.api.app import create_app
+    from src.api.config import Settings
+    from src.experiments.common import factory
+    pipeline = factory(pipeline_factory)()
+    descriptor = pipeline.extractor.descriptor
+    if (descriptor.mode != 'real' or descriptor.model_id != options['model_id'] or
+            str(getattr(pipeline.extractor, 'public_info', {}).get('hash', '')).lower() != options['artifact_sha256'].lower()):
+        raise ExperimentError('offline factory identity/artifact mismatch before load')
+    settings = Settings(mode='real', inference_timeout_sec=options.get('timeout_sec', 120))
+    with TestClient(create_app(settings, pipeline)) as client:
+        def request_json(path, payload):
+            response = client.get(path) if payload is None else client.post(path, json=payload)
+            response.raise_for_status()
+            return response.json()
+        return real_smoke(url='http://in-process', request_json=request_json, **options)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--url', default='http://127.0.0.1:8000')
+    transport = parser.add_mutually_exclusive_group()
+    transport.add_argument('--url', help='Running API; default http://127.0.0.1:8000')
+    transport.add_argument('--factory', help='Trusted no-argument ML pipeline factory for offline reload/ASGI acceptance')
     for name in ['input', 'out', 'model-id', 'artifact-sha256']:
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--raw-model', action='store_true')
     parser.add_argument('--timeout-sec', type=float, default=120)
     args = parser.parse_args()
     try:
-        real_smoke(url=args.url, input_path=args.input, out=args.out, model_id=args.model_id,
-                   artifact_sha256=args.artifact_sha256, raw_model=args.raw_model, timeout_sec=args.timeout_sec)
+        options = dict(input_path=args.input, out=args.out, model_id=args.model_id,
+                       artifact_sha256=args.artifact_sha256, raw_model=args.raw_model, timeout_sec=args.timeout_sec)
+        if args.factory:
+            offline_smoke(pipeline_factory=args.factory, **options)
+        else:
+            real_smoke(url=args.url or 'http://127.0.0.1:8000', **options)
         print('PASS: real API identity, schema and source checks; quality not evaluated')
         return 0
     except Exception as exc:
