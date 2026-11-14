@@ -16,12 +16,14 @@ MODEL = "Qwen/Qwen3.5-0.8B"
 REVISION = "2fc06364715b967f1860aea9cf38778875588b17"
 
 
-def load_base(device="cuda", *, revision=REVISION, local_only=False, base_path=MODEL):
+def load_base(device="cuda", *, revision=REVISION, local_only=False, base_path=MODEL, precision=None):
     import torch
     from transformers import AutoModelForImageTextToText, AutoTokenizer
     if device == "cuda" and not torch.cuda.is_available():
         raise PipelineError("QWEN_GPU_UNAVAILABLE", 503, "qwen.loader")
-    dtype = torch.float16 if device == "cuda" else torch.float32
+    if precision not in (None, "float16", "float32"):
+        raise ValueError("Unsupported model precision")
+    dtype = torch.float16 if device == "cuda" and precision != "float32" else torch.float32
     tokenizer = AutoTokenizer.from_pretrained(base_path, revision=revision, local_files_only=local_only)
     model = AutoModelForImageTextToText.from_pretrained(base_path, revision=revision,
         dtype=dtype, attn_implementation="sdpa", local_files_only=local_only).to(device)
@@ -91,7 +93,7 @@ def factory():
     def loader(resources):
         from peft import PeftModel
         from transformers import AutoTokenizer
-        model, _ = load_base(device, local_only=True)
+        model, _ = load_base(device, local_only=True, precision=manifest["dtype"])
         tokenizer = AutoTokenizer.from_pretrained(root / "tokenizer", local_files_only=True)
         model = PeftModel.from_pretrained(model, root / "adapter").eval()
         session = HFTextEngine(model, tokenizer, (root / "prompt.txt").read_text(encoding="utf-8"),
@@ -112,6 +114,6 @@ def factory():
     adapter = ManagedAdapter(ModelResources(str(root), None, {"device": device}), loader,
         descriptor=ModelDescriptor(manifest["model_id"], "real", "transformers-peft"),
         revision=REVISION, artifact_sha256=hashlib.sha256((root / "model_manifest.json").read_bytes()).hexdigest(),
-        dtype="float16" if device == "cuda" else "float32", context=manifest["context"],
+        dtype=manifest["dtype"] if device == "cuda" else "float32", context=manifest["context"],
         parameters=manifest["total_parameters"], manifest_id=manifest["manifest_id"])
     return Pipeline(adapter)
