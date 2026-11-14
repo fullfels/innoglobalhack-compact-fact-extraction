@@ -91,6 +91,15 @@ def validate_resource_bundle(bm, summary, hw, raw, evaluation):
         value=summary.get(key)
         if value is not None and (type(value) not in (int,float) or not math.isfinite(value) or value<0):
             raise ExperimentError('invalid resource measurement')
+    for record in raw:
+        if 'elapsed_sec' in record:
+            value=record['elapsed_sec']
+            if type(value) not in (int,float) or not math.isfinite(value) or value<0:raise ExperimentError('invalid raw duration')
+    if [r['call_id'] for r in raw if r['phase']=='warmup']!=bm['warmup_ids']:
+        raise ExperimentError('warmup samples do not match protocol')
+    for phase in ['load','cold','cold_start']:
+        if [r['repeat'] for r in raw if r['phase']==phase]!=list(range(bm['cold_trials'])):
+            raise ExperimentError('cold trial samples do not match protocol')
     expected=[(repeat,cid) for repeat in range(bm['repeats']) for cid in bm['call_ids']]
     actual=[(r['repeat'],r['call_id']) for r in raw if r['phase']=='warm']
     if actual!=expected:raise ExperimentError('benchmark samples do not cover declared protocol')
