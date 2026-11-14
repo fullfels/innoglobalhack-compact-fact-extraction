@@ -23,3 +23,7 @@ Published and recomputed baseline JSON may be attached with --published-baseline
 Local tests with official evaluator:
 `OFFICIAL_EVALUATOR=/path/case_metrics.py pytest -q tests/test_evaluation_runner.py`.
 CI tests the invocation protocol with a clearly labelled evaluator spy; the actual official-script test skips unless the external path is supplied.
+
+Official val includes empty ASR turns. Turn.text therefore accepts an empty string; the turns collection remains nonempty and unique idx is preserved. Empty turns are not dropped or renumbered. This is an input-compatibility relaxation within v1, requiring DE/ML review; facts/value/object constraints remain unchanged.
+
+Official val also contains 81 facts with optional object.type outside the Markdown enum (other). Gold validation checks essential evaluator fields and source references, records these annotations in gold_annotation_warnings, and passes the original gold file unchanged to the evaluator. Predictions with a supplied unsupported object.type remain invalid; models can use the official minimum object.name without type. No correction of annotations or evaluator is performed.
