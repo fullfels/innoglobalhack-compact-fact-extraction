@@ -57,3 +57,60 @@ def test_actual_three_run_comparison_and_plots(tmp_path):
     summary.write_text(json.dumps(data))
     with pytest.raises(ExperimentError,match='hash mismatch'):
         compare(runs,benches,gold_path=gold,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=tmp_path/'tampered')
+
+@pytest.fixture
+def audit_bundles(tmp_path):
+    if not os.getenv('OFFICIAL_EVALUATOR'):pytest.skip('Official evaluator supplied separately')
+    call=CallInput(call_id='audit-comparison',started_at='2026-11-13T12:00:00',turns=[{'idx':1,'speaker':'client','text':'Интернет не работает.'}])
+    row=Pipeline(MockExtractor()).run(call)[0].model_dump(mode='json');row['facts'][0]['object']['id']='fixture:svc'
+    gold=tmp_path/'gold.jsonl';gold.write_text(json.dumps(row)+'\n')
+    runs={};benches={}
+    for label in ['A','B']:
+        runs[label]=tmp_path/(label+'-eval');benches[label]=tmp_path/(label+'-bench')
+        evaluate(gold_path=gold,predictions=gold,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=runs[label],model_id='synthetic-fixtures-v1',experiment_id=label,mode='mock',model_config={})
+        benchmark(lambda c:BenchmarkTarget(Pipeline(MockExtractor()),'cpu',synthetic=True),[call],out=benches[label],config={},cold_trials=1,repeats=1)
+    return gold,runs,benches,call
+
+@pytest.mark.parametrize('damage',['configuration','protocol','resource_peak','mixed_device','benchmark_mode','failed_samples'])
+def test_incompatible_quality_resource_reports_rejected(audit_bundles,tmp_path,damage):
+    from src.experiments.common import sha
+    gold,runs,benches,call=audit_bundles
+    def change(path,fn):
+        data=json.loads(path.read_text());fn(data);path.write_text(json.dumps(data));return data
+    if damage=='configuration':change(benches['B']/'benchmark_manifest.json',lambda m:m.update(config={'decode_budget':1}))
+    elif damage=='protocol':change(runs['B']/'manifest.json',lambda m:m.update(evaluation_config={'comparison_protocol':{'postprocessing':'different'}}))
+    elif damage=='resource_peak':
+        change(benches['B']/'benchmark_summary.json',lambda s:s.update(peak_ram_bytes=0))
+        change(benches['B']/'benchmark_manifest.json',lambda m:m.update(summary_sha256=sha(benches['B']/'benchmark_summary.json')))
+    elif damage=='mixed_device':
+        for b in benches.values():change(b/'benchmark_manifest.json',lambda m:m.update(device='cuda:0'))
+    elif damage=='benchmark_mode':change(benches['B']/'benchmark_manifest.json',lambda m:m.update(mode='real'))
+    elif damage=='failed_samples':
+        class FailingWarm:
+            extractor=MockExtractor()
+            count=0
+            def run(self,c):
+                self.count+=1
+                if self.count>1:raise RuntimeError('warm failure')
+                return Pipeline(self.extractor).run(c)
+        benches['B']=tmp_path/'failed-resource'
+        benchmark(lambda c:BenchmarkTarget(FailingWarm(),'cpu',synthetic=True),[call],out=benches['B'],config={},cold_trials=1,repeats=1)
+    with pytest.raises(ExperimentError):compare(runs,benches,gold_path=gold,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=tmp_path/'report',plots=False)
+
+
+def test_official_fact_counts_are_order_independent(audit_bundles,tmp_path):
+    gold,runs,benches,_=audit_bundles
+    out=tmp_path/'counts'
+    compare(runs,benches,gold_path=gold,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=out,plots=False)
+    counts=json.loads((out/'fact_counts.json').read_text())
+    assert counts['A']['audit-comparison']['service_state']=={'tp':1,'fp':0,'fn':0}
+    records=[json.loads(s) for s in (out/'fact_errors.jsonl').read_text().splitlines()]
+    assert any(r.get('official_fact_match') is True for r in records)
+
+
+def test_real_comparison_requires_provenance_not_only_label(audit_bundles,tmp_path):
+    gold,runs,_,_=audit_bundles
+    for root in runs.values():
+        path=root/'manifest.json';data=json.loads(path.read_text());data['mode']='real';path.write_text(json.dumps(data))
+    with pytest.raises(ExperimentError,match='provenance'):
+        compare(runs,{},gold_path=gold,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=tmp_path/'unknown-real',plots=False)

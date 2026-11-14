@@ -5,6 +5,8 @@ import importlib.util
 import itertools
 import hashlib
 import json
+import math
+import re
 from pathlib import Path
 import sys
 from .common import ExperimentError, read_json, rows, sha, write_json
@@ -32,13 +34,13 @@ def fact_analysis(official,gold,pred):
             elif sa.get('span') and sb.get('span') and max(sa['span'][0],sb['span'][0])>=min(sa['span'][1],sb['span'][1]):issues.append('grounding_span_error')
             label=issues or ['correct']
             statuses[(cid,i)]=label
-            records.append({'call_id':cid,'attribute':a['attribute'],'gold_index':i,'prediction_index':j,'categories':label})
+            records.append({'call_id':cid,'attribute':a['attribute'],'gold_index':i,'prediction_index':j,'categories':label,'official_fact_match':True,'span_evaluated':bool(sa.get('span') and sb.get('span') and sa['turn_idx']==sb['turn_idx'])})
         for i,a in enumerate(gf):
             if i not in usedg:
                 statuses[(cid,i)]=['missing']
-                records.append({'call_id':cid,'attribute':a['attribute'],'gold_index':i,'prediction_index':None,'categories':['missing']})
+                records.append({'call_id':cid,'attribute':a['attribute'],'gold_index':i,'prediction_index':None,'categories':['missing'],'official_fact_match':False})
         for j,b in enumerate(pf):
-            if j not in usedp:records.append({'call_id':cid,'attribute':b['attribute'],'gold_index':None,'prediction_index':j,'categories':['extra']})
+            if j not in usedp:records.append({'call_id':cid,'attribute':b['attribute'],'gold_index':None,'prediction_index':j,'categories':['extra'],'official_fact_match':False})
         # Auxiliary near-miss labels do NOT replace official missing/extra counts.
         available=set(range(len(pf)))-usedp
         for i in sorted(set(range(len(gf)))-usedg):
@@ -68,9 +70,57 @@ def pair_delta(a,b):
     result['speedup']=a.get('median_latency_sec')/b['median_latency_sec'] if a.get('median_latency_sec') is not None and b.get('median_latency_sec') else None
     return result
 
+def validate_resource_bundle(bm, summary, hw, raw, evaluation):
+    if summary.get('status')!='complete' or not summary.get('benchmark_valid'):
+        raise ExperimentError('benchmark has failed samples or invalid warmup')
+    if bm.get('device')!=hw.get('device') or summary.get('device')!=hw.get('device'):
+        raise ExperimentError('benchmark device metadata mismatch')
+    declared_device=evaluation.get('model_config',{}).get('device')
+    if (declared_device is not None and declared_device!=bm.get('device')) or (evaluation['mode']=='real' and declared_device is None):
+        raise ExperimentError('real resource comparison requires matching explicit evaluation device')
+    if bm.get('config')!=evaluation.get('model_config',{}):
+        raise ExperimentError('evaluation/benchmark inference config mismatch')
+    if bm.get('artifact',{})!=evaluation.get('artifact',{}):
+        raise ExperimentError('evaluation/benchmark artifact mismatch')
+    mode=evaluation['mode']
+    if bm.get('mode')!=mode and not (mode=='synthetic' and bm.get('synthetic') is True):
+        raise ExperimentError('evaluation/benchmark mode mismatch')
+    if mode=='real' and bm.get('synthetic'):
+        raise ExperimentError('synthetic resources cannot represent a real run')
+    for key in RESOURCE_FIELDS:
+        value=summary.get(key)
+        if value is not None and (type(value) not in (int,float) or not math.isfinite(value) or value<0):
+            raise ExperimentError('invalid resource measurement')
+    expected=[(repeat,cid) for repeat in range(bm['repeats']) for cid in bm['call_ids']]
+    actual=[(r['repeat'],r['call_id']) for r in raw if r['phase']=='warm']
+    if actual!=expected:raise ExperimentError('benchmark samples do not cover declared protocol')
+    loops=[r for r in raw if r['phase']=='warm_run']
+    if [r['repeat'] for r in loops]!=list(range(bm['repeats'])):
+        raise ExperimentError('benchmark repeat windows missing/duplicated')
+    for loop in loops:
+        total=sum(r['elapsed_sec'] for r in raw if r['phase']=='warm' and r['repeat']==loop['repeat'])
+        if not math.isfinite(loop['elapsed_sec']) or loop['elapsed_sec']<total:
+            raise ExperimentError('invalid benchmark wall window')
+    resources=[r for r in raw if r['phase']=='resources']
+    if len(resources)!=1:raise ExperimentError('resource peak record missing/duplicated')
+    for key in ['peak_ram_bytes','peak_vram_bytes','parameters','checkpoint_bytes']:
+        if summary.get(key)!=resources[0].get(key):raise ExperimentError('resource summary differs from raw peak')
+    rss=[r['rss_bytes'] for r in raw if r['phase']=='memory']
+    if summary.get('peak_ram_bytes')!=(max(rss) if rss else None):
+        raise ExperimentError('RSS peak differs from raw samples')
+    if bm['device']=='cpu':
+        if summary.get('peak_vram_bytes') is not None or summary.get('gpu_seconds_per_1000') is not None:
+            raise ExperimentError('CPU report contains GPU measurements')
+    elif bm.get('gpu_allocation')=='exclusive one GPU':
+        expected_gpu=summary['warm_wall_sec']*1000/summary['attempts']
+        if summary.get('gpu_seconds_per_1000')!=expected_gpu:raise ExperimentError('GPU allocation formula mismatch')
+    elif summary.get('gpu_seconds_per_1000') is not None:
+        raise ExperimentError('GPU seconds without allocation protocol')
+
 def compare(runs,benchmarks,*,gold_path,evaluator,out,plots=True):
+    if set(benchmarks)-set(runs):raise ExperimentError('benchmark label has no evaluation')
     if len(runs)<2:raise ExperimentError('at least two completed runs required')
-    gold=rows(gold_path);official=evaluator_module(evaluator);table=[];analyses={};states={};reference=None;hw_reference=None;protocol=None
+    gold=rows(gold_path);official=evaluator_module(evaluator);table=[];analyses={};states={};reference=None;hw_reference=None;protocol=None;quality_protocol=None
     for label,folder in runs.items():
         folder=Path(folder);manifest=read_json(folder/'manifest.json')
         if manifest['status']!='complete' or manifest['dataset']['sha256']!=sha(gold_path) or manifest['evaluator_sha256']!=sha(evaluator):
@@ -82,6 +132,15 @@ def compare(runs,benchmarks,*,gold_path,evaluator,out,plots=True):
         metrics=read_json(folder/'metrics.json')
         # Guard against manually edited metrics: compute again with the supplied unchanged evaluator.
         if official.evaluate(gold,pred)!=metrics:raise ExperimentError('metrics do not match official recomputation')
+        declared=manifest.get('evaluation_config',{}).get('comparison_protocol')
+        current_quality_protocol={'declared':declared,'postprocessing':manifest.get('model_config',{}).get('postprocessing',{})}
+        if manifest['mode']=='real':
+            if not isinstance(declared,dict) or not declared.get('input_policy') or not declared.get('postprocessing'):
+                raise ExperimentError('real comparison requires input/postprocessing protocol provenance')
+            if not re.fullmatch('[0-9a-fA-F]{64}',str(manifest.get('artifact',{}).get('hash',''))):
+                raise ExperimentError('real comparison requires artifact SHA256')
+        if quality_protocol is None:quality_protocol=current_quality_protocol
+        elif current_quality_protocol!=quality_protocol:raise ExperimentError('quality input/postprocessing protocol mismatch')
         row={'label':label,'model_id':manifest['model_id'],'mode':manifest['mode'],**{k:metrics[k] for k in METRICS}}
         if reference is None:reference=manifest['mode']
         elif manifest['mode']!=reference:raise ExperimentError('cannot compare mixed synthetic/mock/real modes')
@@ -91,6 +150,7 @@ def compare(runs,benchmarks,*,gold_path,evaluator,out,plots=True):
             if bm['summary_sha256']!=sha(root/'benchmark_summary.json'):raise ExperimentError('benchmark summary hash mismatch')
             raw=[json.loads(line) for line in (root/'benchmark_raw.jsonl').read_text().splitlines()]
             if any(summary.get(k)!=v for k,v in summarize(raw).items()):raise ExperimentError('summary does not match raw samples')
+            validate_resource_bundle(bm,summary,hw,raw,manifest)
             digest=hashlib.sha256(json.dumps([features(gold[cid]).model_dump(mode='json') for cid in bm['call_ids']],sort_keys=True).encode()).hexdigest()
             if digest!=bm['input_features_sha256']:raise ExperimentError('benchmark inputs differ from evaluation dataset')
             if bm['raw_sha256']!=sha(root/'benchmark_raw.jsonl'):raise ExperimentError('benchmark raw hash mismatch')
@@ -117,6 +177,16 @@ def compare(runs,benchmarks,*,gold_path,evaluator,out,plots=True):
                 key=r['attribute']+':'+category
                 grouped[label][key]=grouped[label].get(key,0)+1
     write_json(out/'errors_by_attribute.json',grouped)
+    counts={}
+    for label,records in analyses.items():
+        counts[label]={}
+        for record in records:
+            if 'official_fact_match' not in record:continue
+            per_call=counts[label].setdefault(record['call_id'],{})
+            totals=per_call.setdefault(record['attribute'],{'tp':0,'fp':0,'fn':0})
+            key='tp' if record['official_fact_match'] else ('fp' if record['gold_index'] is None else 'fn')
+            totals[key]+=1
+    write_json(out/'fact_counts.json',counts)
     with (out/'pairwise_facts.jsonl').open('w') as f:
         for a,b in itertools.combinations(runs,2):
             for cid,call in gold.items():
@@ -145,7 +215,8 @@ def plot(table,out):
             if frontier:ax.plot(*zip(*frontier),linestyle='--')
         ax.set_xlabel(xkey);ax.set_ylabel(ykey)
         synthetic=any(r['mode']!='real' or r.get('synthetic_resources') for r in table)
-        ax.set_title(('SYNTHETIC / MOCK · ' if synthetic else '')+name)
+        prefix='UNVERIFIED MODE · ' if any(r['mode']=='unknown' for r in table) else ('SYNTHETIC / MOCK · ' if synthetic else '')
+        ax.set_title(prefix+name)
         if not points:ax.text(.5,.5,'Resources not measured',ha='center',transform=ax.transAxes)
         fig.tight_layout();fig.savefig(out/(name+'.png'),dpi=150);plt.close(fig)
 
