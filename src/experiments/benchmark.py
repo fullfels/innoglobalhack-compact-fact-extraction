@@ -4,6 +4,7 @@ from copy import deepcopy
 import inspect
 from dataclasses import dataclass, field
 import importlib.metadata
+import hashlib
 import json
 import math
 import os
@@ -98,7 +99,7 @@ def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, rep
     hw=hardware(device);raw=[];target=None;cuda=None;memory=None;target_identity=None
     manifest={**identity(),'experiment_id':experiment_id,'config':deepcopy(config),'device':device,'batch':1,'concurrency':1,
         'repeats':repeats,'cold_trials':cold_trials,'warmup_calls':len(warmup_calls),
-        'call_ids':[c.call_id for c in calls],'warmup_ids':[c.call_id for c in warmup_calls],
+        'input_features_sha256':hashlib.sha256(json.dumps([c.model_dump(mode='json') for c in calls],sort_keys=True).encode()).hexdigest(),'warmup_features_sha256':hashlib.sha256(json.dumps([c.model_dump(mode='json') for c in warmup_calls],sort_keys=True).encode()).hexdigest(),'call_ids':[c.call_id for c in calls],'warmup_ids':[c.call_id for c in warmup_calls],
         'status':'running','gpu_allocation':'exclusive one GPU' if exclusive_gpu else 'not asserted'}
     write_json(out/'hardware.json',hw)
     def close_target():
@@ -200,6 +201,7 @@ def benchmark(build, calls, *, out, config, device='cpu', warmup_calls=None, rep
                 for row in raw:f.write(json.dumps(row,allow_nan=False)+'\n')
             write_json(out/'hardware.json',hw)
             manifest['raw_sha256']=sha(out/'benchmark_raw.jsonl')
+            manifest['summary_sha256']=sha(out/'benchmark_summary.json')
             write_json(out/'benchmark_manifest.json',manifest)
 
 def main():

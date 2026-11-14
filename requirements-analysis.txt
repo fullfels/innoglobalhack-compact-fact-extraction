@@ -1,0 +1,2 @@
+-r requirements-dev.lock
+matplotlib==3.10.0
