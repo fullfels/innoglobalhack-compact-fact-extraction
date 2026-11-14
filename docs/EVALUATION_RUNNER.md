@@ -27,3 +27,9 @@ CI tests the invocation protocol with a clearly labelled evaluator spy; the actu
 Official val includes empty ASR turns. Turn.text therefore accepts an empty string; the turns collection remains nonempty and unique idx is preserved. Empty turns are not dropped or renumbered. This is an input-compatibility relaxation within v1, requiring DE/ML review; facts/value/object constraints remain unchanged.
 
 Official val also contains 81 facts with optional object.type outside the Markdown enum (other). Gold validation checks essential evaluator fields and source references, records these annotations in gold_annotation_warnings, and passes the original gold file unchanged to the evaluator. Predictions with a supplied unsupported object.type remain invalid; models can use the official minimum object.name without type. No correction of annotations or evaluator is performed.
+
+## Audit hardening
+
+Prediction records reject unknown top-level fields; gold remains a separate allowlisted feature source. JSON rejects duplicate keys and non-finite numbers (including overflowing exponent literals). Factory configs are deep-copied: caller mutation cannot rewrite the recorded experiment. Dataset, prediction and evaluator hashes are checked again after subprocess completion; supplied aggregate counts must agree with preflight. Failed evaluator/input-integrity checks invalidate metrics.json instead of leaving success-shaped numbers. evaluation_config.expected_evaluator_sha256 optionally pins an approved official version before execution; the evaluator path is trusted local code, never an uploaded model artifact.
+
+Artifact identity is recorded from model_config.artifact and effective public adapter metadata. Reported metadata still needs verification against exported files by the ML loader; generic infrastructure does not guess checkpoint identity.
