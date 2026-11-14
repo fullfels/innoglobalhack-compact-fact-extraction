@@ -21,6 +21,9 @@ class CatalogNormalizer:
 
 class TemporalNormalizer:
     """Задача T13: Нормализация относительных дат относительно started_at звонка"""
+    def __init__(self):
+        pass
+
     def normalize(self, batch: CandidateBatch, call: CallInput) -> CandidateBatch:
         started_at_str = call.started_at
         if not started_at_str:
@@ -54,6 +57,9 @@ class TemporalNormalizer:
 
 class StateAndGroundingNormalizer:
     """Задача T15: Проверка спанов, цитат и привязка к репликам"""
+    def __init__(self):
+        pass
+
     def normalize(self, batch: CandidateBatch, call: CallInput) -> CandidateBatch:
         turns_map = {t.idx: t.text for t in call.turns}
 
@@ -116,6 +122,7 @@ class Pipeline:
                 filtered += 1
                 continue
             if candidate.fact.attribute == 'agreement':
+                # confirmed means client acceptance is grounded in evidence_turns.
                 turns = {t.idx: t for t in call.turns}
                 if candidate.confirmation != 'confirmed' or not any(
                     idx in turns and turns[idx].speaker == 'client' for idx in candidate.evidence_turns
