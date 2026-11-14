@@ -79,7 +79,13 @@ def evaluate(*, gold_path, predictions, evaluator, out, model_id, experiment_id,
             pipeline=factory(pipeline_factory)(model_config or {})
             if pipeline.extractor.descriptor.model_id != model_id: raise ExperimentError('model_id does not match adapter')
             manifest['mode']=pipeline.extractor.descriptor.mode
-            generate(gold_path,pipeline,out/'predictions.jsonl')
+            adapter=pipeline.extractor
+            try:
+                if callable(getattr(adapter,'load',None)):adapter.load()
+                if getattr(adapter,'state','unloaded')!='ready':raise ExperimentError('model not ready')
+                generate(gold_path,pipeline,out/'predictions.jsonl')
+            finally:
+                if callable(getattr(adapter,'close',None)):adapter.close()
         else:
             # Copy bytes, not a dict keyed by call_id: duplicate IDs must remain detectable.
             (out/'predictions.jsonl').write_bytes(Path(predictions).read_bytes())
