@@ -17,14 +17,21 @@ def features(row):
 def validate_record(row, call, *, gold=False):
     if not isinstance(row.get('facts'),list): raise ExperimentError('facts must be an array')
     turns = {t.idx:t for t in call.turns}
-    for f in row['facts']:
+    warnings=[]
+    for fact_index,f in enumerate(row['facts']):
         try:
             if not {'object','attribute','value','polarity','valid_from','valid_to','source'} <= f.keys(): raise ValueError()
             idx = f['source']['turn_idx']
             if type(idx) is not int or idx not in turns: raise ValueError()
             turn = turns[idx]
             data = dict(f)
-            if gold: data.pop('confirmed',None)  # annotation field, not an inference feature
+            if gold:
+                data.pop('confirmed',None)
+                data['object']=dict(data['object'])
+                if data['object'].get('type') not in {None,'service','device','ticket','client'}:
+                    warnings.append({'fact_index':fact_index,'code':'GOLD_OPTIONAL_OBJECT_TYPE_OUTSIDE_SCHEMA'})
+                    data['object'].pop('type')
+  # annotation field, not an inference feature
             data.setdefault('speaker', turn.speaker)
             fact = Fact.model_validate(data)
             if fact.speaker != turn.speaker: raise ValueError()
@@ -45,6 +52,7 @@ def validate_record(row, call, *, gold=False):
                 # datetime strings may have equivalent spelling; validate structured metadata.
                 merged = call.model_dump(mode='json');merged[key]=row[key]
                 if CallInput.model_validate(merged) != call: raise ExperimentError('prediction changed input metadata')
+    return warnings
 
 def preflight(gold_path, pred_path):
     gold,pred = rows(gold_path),rows(pred_path)
@@ -54,7 +62,8 @@ def preflight(gold_path, pred_path):
     if missing or extra: return gold,pred,report
     for cid,g in gold.items():
         call=features(g)
-        validate_record(g,call,gold=True)
+        warnings=validate_record(g,call,gold=True)
+        if warnings:report.setdefault('gold_annotation_warnings',[]).append({'call_id':cid,'warnings':warnings})
         validate_record(pred[cid],call)
     report['valid']=True
     return gold,pred,report
