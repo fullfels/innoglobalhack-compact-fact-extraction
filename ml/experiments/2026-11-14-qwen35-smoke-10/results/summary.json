@@ -1,0 +1,23 @@
+{
+  "n_selected": 10,
+  "n_completed": 10,
+  "status_counts": {
+    "ok": 8,
+    "invalid_output": 2
+  },
+  "n_failed": 2,
+  "n_markdown_wrappers_removed": 0,
+  "n_valid_empty_answers": 0,
+  "n_null_start_dates": 0,
+  "n_input_too_long": 0,
+  "valid_json_and_structure_fraction": 0.8,
+  "latency_mean_sec": 5.564375,
+  "latency_p50_sec": 5.5371,
+  "latency_p95_sec": 6.705,
+  "latency_success_count": 8,
+  "all_attempts_total_sec": 56.081,
+  "max_peak_cuda_allocated_mb": 2395.38037109375,
+  "measurement_note": "Latency mean/p50/p95 use successful calls only; failed attempts are reported separately. batch=1; warmed, CUDA-synchronised end-to-end call latency excluding model loading. Not a full CPU/GPU benchmark or proof of teacher savings.",
+  "validation_note": "Local structural/source checks; not proof of semantic correctness or a final organiser-approved schema.",
+  "evaluation_note": "Failed generations are explicit in n_failed and contribute empty facts; inspect records. 10 calls are a smoke test, not representative final quality."
+}

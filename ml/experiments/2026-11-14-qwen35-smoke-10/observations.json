@@ -1,0 +1,34 @@
+{
+  "n_calls": 10,
+  "n_raw_facts_per_call": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+  ],
+  "n_raw_start_dates_equal_call_start": 10,
+  "failed_calls": [
+    {
+      "call_id": "u2027_00010:call0000",
+      "status": "invalid_output",
+      "error": "facts[0]: speaker не соответствует источнику"
+    },
+    {
+      "call_id": "u2027_00014:call0000",
+      "status": "invalid_output",
+      "error": "facts[0]: speaker не соответствует источнику"
+    }
+  ],
+  "notes": [
+    "All ten outputs contained one fact only",
+    "Two role/source mismatches",
+    "Structure success is not semantic accuracy",
+    "No new generation or training performed during upload"
+  ]
+}

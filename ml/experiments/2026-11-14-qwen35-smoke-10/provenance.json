@@ -1,0 +1,15 @@
+{
+  "target_repository": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction",
+  "colab_notebook": "https://colab.research.google.com/drive/1-kXVgkLYQn2py5rs-DFunO3KcJjlRCkg",
+  "colab_access_note": "Access follows the existing Google Drive sharing settings; no access settings changed.",
+  "source_artifact_sha256": {
+    "MTS_02_Qwen35_Check.ipynb": "23c9624209ad8bc4383bba7adade86e61a1d628aae191f8dec1bf3153f7407f4",
+    "mts_qwen35_probe.zip": "a0a8ef4b7d2c535fa6dba0f78260362999d50f663d6df99495355e3a0f3c34f0",
+    "mts_qwen35_probe_results.zip": "940767876963abd9d4472dd3a614392f00dff84f4f4c4b3b9d45a4d6cd5c64db"
+  },
+  "model": "Qwen/Qwen3.5-0.8B",
+  "revision": "2fc06364715b967f1860aea9cf38778875588b17",
+  "trained_on_case": false,
+  "scope": "Only latest Qwen3.5 untrained 10-call probe; no new dataset preparation, trained adapter, or full-val results included.",
+  "repository_storage_policy": "Only compact results/code/notebook/hashes. Original dataset, gold/baseline call slices, organizer catalog/schema/evaluator, archives and raw logs are kept outside Git per data/README and CONTRIBUTING."
+}

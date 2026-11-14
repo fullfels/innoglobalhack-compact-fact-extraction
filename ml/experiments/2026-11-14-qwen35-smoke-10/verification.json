@@ -1,0 +1,15 @@
+{
+  "checks": {
+    "predict.py_matches_executed_version": true,
+    "common.py_matches_executed_version": true,
+    "prompt.txt_matches_executed_version": true,
+    "official_metrics_reproduced": true,
+    "same_10_calls_for_both_systems": true,
+    "raw_per_call_records_preserved": true
+  },
+  "status": "verified_existing_run_only",
+  "new_gpu_run": false,
+  "fine_tuning_performed": false,
+  "private_raw_per_call_records_preserved_outside_git": true,
+  "published_raw_dialogues": false
+}
