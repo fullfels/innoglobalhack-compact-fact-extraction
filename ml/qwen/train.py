@@ -35,6 +35,11 @@ def save(path, value):
 def sha(path): return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def autocast_for(model):
+    import torch
+    return torch.autocast("cuda", dtype=torch.float16, enabled=model.dtype == torch.float16)
+
+
 def record_failure(out, phase, error_type, own_run):
     out = Path(out)
     if out.exists() and not own_run:
@@ -83,7 +88,7 @@ def check_loss_equivalence(model, tokenizer):
     tensor = torch.tensor([ids], device="cuda")
     labels = torch.tensor([encoded["labels"]], device="cuda")
     model.eval()
-    with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16):
+    with torch.no_grad(), autocast_for(model):
         reference = model(input_ids=tensor, attention_mask=torch.ones_like(tensor), labels=labels, use_cache=False).loss
         optimized = suffix_loss(model, encoded)
     torch.testing.assert_close(reference.float(), optimized.float(), rtol=.003, atol=.003)
@@ -171,7 +176,7 @@ def diagnostic_subset(calls, limit):
 def teacher_loss(model, rows):
     import torch
     model.eval(); values = []
-    with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16):
+    with torch.no_grad(), autocast_for(model):
         for row in rows: values.append(float(suffix_loss(model, row)))
     return statistics.mean(values)
 
@@ -188,7 +193,7 @@ def checkpoint(model, tokenizer, path, data_root, step, probe):
         else:
             shutil.copyfile(data_root / name, path / dest)
     x = torch.tensor([probe["input_ids"]], device="cuda")
-    with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16):
+    with torch.no_grad(), autocast_for(model):
         logits = model(input_ids=x, attention_mask=torch.ones_like(x), use_cache=False, logits_to_keep=1).logits.float().cpu()
     torch.save({"input_ids": x.cpu(), "logits": logits}, path / "reload_reference.pt")
     save(path / "checkpoint.json", {"step": step, "kind": "LoRA", "probe_sha256": sha(path / "reload_reference.pt")})
@@ -206,6 +211,7 @@ def main():
     ap.add_argument("--learning-rate", type=float, default=2e-4)
     ap.add_argument("--budget-hours", type=float, default=4)
     ap.add_argument("--full-eval", action="store_true")
+    ap.add_argument("--precision", choices=("float16", "float32"), default="float32")
     ap.add_argument("--baseline-count", type=int, default=2,
                     help="Fixed train/dev prefix for paired before/after diagnostics; not full quality evaluation")
     args = ap.parse_args()
@@ -226,11 +232,16 @@ def main():
         if not args.pilot_report: raise RuntimeError("Main SFT requires measured successful pilot report")
         prior = json.loads(args.pilot_report.read_text(encoding="utf-8"))
         if not prior.get("main_sft_ready"): raise RuntimeError("Pilot gates failed; main SFT not authorized by experiment protocol")
+        if (prior.get("base_model") != MODEL or prior.get("base_revision") != REVISION
+                or prior.get("dtype") != args.precision
+                or prior.get("dataset_manifest_sha256") != sha(data_root / "manifest.json")):
+            raise RuntimeError("Pilot model, precision or dataset does not match this main run")
         if prior["eta_main_one_epoch_sec"] > args.budget_hours * 3600:
             raise RuntimeError("Measured main ETA exceeds the configured training-time budget; revise config explicitly")
     seed = 42; random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
     config = {"phase": args.phase, "seed": seed, "base_model": MODEL, "base_revision": REVISION,
-              "dtype": "float16", "quantization": None, "rank": 16, "alpha": 32, "dropout": 0.,
+              "dtype": args.precision, "quantization": None, "rank": 16, "alpha": 32, "dropout": 0.,
+              "grad_scaler_enabled": args.precision == "float16",
               "learning_rate": args.learning_rate, "accumulation": args.accumulation or (2 if args.phase == "pilot" else 4),
               "baseline_diagnostic_count_per_split": args.baseline_count,
               "diagnostic_policy": "Fixed first N calls, identical before/after; full after-train and inner-dev measured separately. Count reduced after measured 122s runaway base generation; no metric representativeness claim.",
@@ -249,7 +260,7 @@ def main():
     dev_path = data_root / (prefix + ("dev_8.jsonl" if args.phase == "pilot" else "dev.jsonl"))
     train_raw = read(data_root / ("pilot/train_32.jsonl" if args.phase == "pilot" else "data/train.jsonl"))
     dev_raw = read(data_root / ("pilot/dev_8.jsonl" if args.phase == "pilot" else "data/dev.jsonl"))
-    model, tokenizer = load_base()
+    model, tokenizer = load_base(precision=args.precision)
     train_rows = [tokenize.encode_record(effective_example(r), tokenizer, max_length=config["training_context"]) for r in read(train_path)]
     dev_rows = [tokenize.encode_record(effective_example(r), tokenizer, max_length=config["training_context"]) for r in read(dev_path)]
     target_names = [name for name, module in model.named_modules() if isinstance(module, torch.nn.Linear) and ".language_model.layers." in name]
@@ -276,7 +287,7 @@ def main():
     model.enable_input_require_grads()
     parameters = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.AdamW(parameters, lr=args.learning_rate, weight_decay=0.)
-    scaler = torch.amp.GradScaler("cuda")
+    scaler = torch.amp.GradScaler("cuda", enabled=args.precision == "float16", init_scale=128.)
     accumulation = config["accumulation"]
     steps = args.steps if args.phase == "pilot" else math.ceil(len(train_rows) / accumulation)
     initial_dev = teacher_loss(model, dev_rows)
@@ -297,10 +308,12 @@ def main():
         for _ in range(count):
             if position >= len(order): random.Random(seed + step).shuffle(order); position = 0
             row = train_rows[order[position]]; position += 1
-            with torch.autocast("cuda", dtype=torch.float16): loss = suffix_loss(model, row)
+            with autocast_for(model): loss = suffix_loss(model, row)
             if not torch.isfinite(loss): raise RuntimeError("Non-finite training loss")
             losses.append(float(loss.detach())); scaler.scale(loss / count).backward()
         scaler.unscale_(optimizer); norm = torch.nn.utils.clip_grad_norm_(parameters, 1.)
+        if args.precision == "float32" and not torch.isfinite(norm):
+            raise RuntimeError("Non-finite FP32 gradient; refusing optimizer update")
         old_scale = scaler.get_scale(); scaler.step(optimizer); scaler.update()
         torch.cuda.synchronize()
         log = {"step": step + 1, "loss": statistics.mean(losses), "microbatches": count, "learning_rate": optimizer.param_groups[0]["lr"],
@@ -333,7 +346,7 @@ def main():
         long_row = tokenize.encode_record(effective_example(next(r for r in full if r["call_id"] == longest)), tokenizer, max_length=16384)
         try:
             optimizer.zero_grad(set_to_none=True); model.train(); torch.cuda.reset_peak_memory_stats()
-            with torch.autocast("cuda", dtype=torch.float16): long_loss = suffix_loss(model, long_row)
+            with autocast_for(model): long_loss = suffix_loss(model, long_row)
             scaler.scale(long_loss).backward()
             long_probe = {"passed": True, "tokens": len(long_row["input_ids"]), "optimizer_update": False,
                           "peak_cuda_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2}
@@ -344,11 +357,11 @@ def main():
             if "long_loss" in locals(): del long_loss
     del loss
     del optimizer, parameters, model; gc.collect(); torch.cuda.empty_cache()
-    fresh, _ = load_base()
+    fresh, _ = load_base(precision=args.precision)
     model = PeftModel.from_pretrained(fresh, selected / "adapter").eval()
     reference = torch.load(selected / "reload_reference.pt", weights_only=True, map_location="cpu")
     x = reference["input_ids"].to("cuda")
-    with torch.no_grad(), torch.autocast("cuda", dtype=torch.float16):
+    with torch.no_grad(), autocast_for(model):
         actual = model(input_ids=x, attention_mask=torch.ones_like(x), use_cache=False, logits_to_keep=1).logits.float().cpu()
     torch.testing.assert_close(reference["logits"], actual, atol=.003, rtol=.003)
     reload_result = {"passed": True, "fresh_base_and_saved_adapter": True,
@@ -368,6 +381,8 @@ def main():
              "no_skipped_optimizer_steps": not any(r["optimizer_step_skipped"] for r in logs),
              "long_call_memory_checked": long_probe["passed"] if args.phase == "pilot" else True}
     report = {"phase": args.phase, "gates": gates, "main_sft_ready": all(gates.values()),
+              "base_model": MODEL, "base_revision": REVISION, "dtype": args.precision,
+              "dataset_manifest_sha256": sha(data_root / "manifest.json"),
               "training_steps": steps, "selected_checkpoint_step": best_step or steps,
               "training_elapsed_sec_including_dev_checks": elapsed_training, "timing_steps": len(timing),
               "seconds_per_microbatch_median": per_micro, "eta_main_one_epoch_sec": eta,
@@ -384,7 +399,7 @@ def main():
         "model_id": "qwen35-08b-case-" + args.phase, "manifest_id": sha(args.out / "training_config.json"),
         "base_model": MODEL, "base_revision": REVISION, "context": 16384, "max_new_tokens": 1536,
         "total_parameters": config["total_parameters"], "trainable_parameters": config["trainable_parameters"],
-        "dtype": "float16", "sha256": hashes, "training_quality_gates_passed": all(gates.values()),
+        "dtype": args.precision, "sha256": hashes, "training_quality_gates_passed": all(gates.values()),
         "serving_acceptance": "pending DE confirmation/time normalizers and real HTTP acceptance"})
     if args.phase == "main" and args.full_eval:
         quality_run(model, tokenizer, read(data_root / "evaluation/val.jsonl"), data_root, args.out / "official_val_after")

@@ -29,7 +29,12 @@ python -m py_compile ml/qwen/train.py ml/qwen/runtime.py
 python -u -m ml.qwen.train --data-root /content/mts_train_ready_v2 --out /content/runs/pilot-unique --phase pilot --steps 64
 ```
 
-Закреплены `Qwen/Qwen3.5-0.8B` и revision `2fc06364715b967f1860aea9cf38778875588b17`. LoRA FP16, r16/alpha32, только linear-модули language_model; visual tower не обучается. Trainable adapters FP32, AdamW, GradScaler, gradient clipping, checkpointing, seed42. Квантования в первом контроле нет.
+Закреплены `Qwen/Qwen3.5-0.8B` и revision `2fc06364715b967f1860aea9cf38778875588b17`. LoRA FP32 по умолчанию, r16/alpha32, только linear-модули language_model; visual tower не обучается. AdamW, gradient clipping, checkpointing, seed42; autocast и GradScaler в FP32 выключены. Квантования в первом контроле нет. Первый FP16-пилот остановлен: в журнале первых 20 шагов 9 пропусков из-за нечисловых градиентов, dev-loss после16 вырос0,46142→0,61658. Это не успешный пилот. FP32 до повторного пилота проверяется отдельным numerics_probe: 3 конечных backward/update, фактическое изменение весов, самый длинный train-backward без обновления. Устойчивость FP32 не объявляется доказанной до реального результата.
+
+```text
+python -u -m ml.qwen.numerics_probe --data-root /content/mts_train_ready_v2 --out /content/runs/numerics-unique
+python -u -m ml.qwen.train --data-root /content/mts_train_ready_v2 --out /content/runs/pilot-fp32-unique --phase pilot --steps 64 --precision float32 --learning-rate 5e-5
+```
 
 Проверяется совпадение completion-only prefix и EOS; loss на входных токенах запрещён. `logits_to_keep` вычисляет logits только для суффикса ответа и предыдущей позиции; его loss сравнивается с обычным masked causal-LM loss на реальной модели перед обучением. Это экономия памяти, а не изменение цели обучения.
 

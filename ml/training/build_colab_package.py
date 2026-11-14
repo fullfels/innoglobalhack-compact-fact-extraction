@@ -10,7 +10,7 @@ def build(root, output):
     paths = ["src/__init__.py", "src/contracts/__init__.py", "src/contracts/models.py",
              "src/pipeline/__init__.py", "src/pipeline/adapters.py", "src/pipeline/lifecycle.py", "src/pipeline/service.py",
              "ml/__init__.py", "ml/qwen/__init__.py", "ml/qwen/bridge.py", "ml/qwen/runtime.py",
-             "ml/qwen/prompting.py", "ml/qwen/train.py", "ml/qwen/requirements.txt", "ml/qwen/INTEGRATION.md", "ml/qwen/README.md"]
+             "ml/qwen/prompting.py", "ml/qwen/train.py", "ml/qwen/numerics_probe.py", "ml/qwen/requirements.txt", "ml/qwen/INTEGRATION.md", "ml/qwen/README.md"]
     manifest = {"fs_contract_snapshot": "640dc29e6fc49869110fd291e3d445210d9d0aeb",
                 "policy": "Explicit code-only transport; no corpus, organizer catalog/evaluator, weights or secrets.",
                 "sha256": {p: hashlib.sha256((root / p).read_bytes()).hexdigest() for p in paths}}
