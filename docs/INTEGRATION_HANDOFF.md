@@ -2,6 +2,8 @@
 
 Исполняемые схемы: `src/contracts/models.py`. Детальная семантика: [INTEGRATION_V1](INTEGRATION_V1.md). Это требования к передаче, а не утверждение о готовых ML/DE компонентах.
 
+Актуальный совместный snapshot и пошаговая проверка одного real запроса, 10/383 calls и A/B/C: [FIRST_REAL_INFERENCE.md](FIRST_REAL_INFERENCE.md). До merge использовать проверочную ветку; main пока не содержит все feature PR. Реальные артефакты ещё не переданы, T20 не выполнена.
+
 ## Начало работы
 
 Принять приглашение GitHub, клонировать private repo, создать ветку от main:
@@ -21,8 +23,8 @@ DE: `data/<task>`, ML: `ml/<task>`. Связать PR с существующи�
 
 - `Extractor.extract(call: CallInput) -> CandidateBatch`; call содержит только features. Сохранять started_at, original idx/speaker/text, не читать gold. Минимальные official facts обернуть в CandidateFact.
 - `InjectedAdapter(ModelResources(model_path, tokenizer, inference_config), bridge, descriptor=ModelDescriptor(model_id, 'real', engine))`. Bridge `(CallInput, ModelResources) -> CandidateBatch` — наш interface, не сигнатура Qwen. Загруженный engine удерживать в bridge/loader, не загружать каждый запрос.
-- Loader вызывает `set_state('loading')`, после успешной загрузки и smoke — `ready`, при load failure — `failed`. Исходное состояние `unloaded`. Пока state не ready, /health и /extract возвращают 503. Для переключения конфигурации A/B/C создавать отдельную согласованную сборку; не загружать три копии в HTTP worker.
-- ModelDescriptor — источник публичной идентичности; mode приложения обязан совпадать. Пути/tokenizer/config приватны. Поля artifact/hash/context/dtype/manifest в /model/info ещё нужно связать с ML manifest.
+- Для serving использовать ManagedAdapter с loader → LoadedModel(inference, close): общий lifecycle сам ставит loading/ready/failed и обеспечивает load once. Loader возвращает только полностью загруженный session; model smoke выполняется отдельно. Исходное состояние unloaded; пока state не ready, /health и /extract возвращают 503. Низкоуровневый InjectedAdapter требует внешнего lifecycle. Для A/B/C создавать отдельную согласованную сборку; не загружать три копии в HTTP worker.
+- ModelDescriptor — источник публичной идентичности; mode приложения обязан совпадать. Пути/tokenizer/config приватны. ManagedAdapter принимает public revision/hash/context/dtype/manifest; значения должен предоставить и проверить ML loader.
 - Generation/parse/context overflow/OOM не превращать в facts=[]. Использовать PipelineError со стабильным code/module; неожиданные ошибки оборачиваются этапом с error_type без текста исключения в HTTP/logs. Штатный пустой CandidateBatch разрешён.
 - CandidateBatch: candidates + warnings + status=ok. CandidateFact: fact, object_key, evidence_turns, temporal_expression, confirmation, provenance, warnings. Даты ISO datetime; не numeric timestamps. Span/quote при ненадёжной привязке — оба null.
 - Confirmation: unknown для утверждений, rejected для опровергнутых/неподтверждённых предложений; agreement требует confirmed и evidence_turns со ссылкой на принятие клиентом. Присутствие клиентской реплики не заменяет семантическую проверку её содержания.
@@ -46,13 +48,13 @@ DE: `data/<task>`, ML: `ml/<task>`. Связать PR с существующи�
 
 | Компонент | Готовая точка | Зависимость / что отсутствует |
 |---|---|---|
-| Qwen | InjectedAdapter → Pipeline | ML bridge, engine/dependencies, checkpoint/tokenizer |
+| Qwen | ManagedAdapter / InjectedAdapter → Pipeline | ML bridge, engine/dependencies, checkpoint/tokenizer |
 | DE rules | ordered tuple Normalizer | Реализации, catalog, semantic fixtures |
-| Lifecycle | descriptor/state + create_app + InferenceWorker | Реальный loader, stopping/recovery; graceful shutdown ждёт native inference |
-| Benchmark | Pipeline.run(call) | FS collector ещё не реализован: cold/warm, RSS/VRAM, CUDA sync, hardware и raw samples |
-| Offline JSONL | CallInput(features) → Pipeline.run → prediction.model_dump(mode='json') | Runner ещё не реализован: gold отделить до pipeline, preflight ID/duplicates, serialize prediction без meta, evaluator отдельно |
+| Lifecycle | ManagedAdapter + LoadedModel + create_app + InferenceWorker | ML loader/release, engine-specific stopping/recovery; graceful shutdown ждёт native inference |
+| Benchmark | src.experiments.benchmark, BenchmarkTarget | ML factory должна включать adapter.load в измеряемую сборку target; нужны реальные hardware runs |
+| Offline JSONL | src.experiments.evaluate; features → Pipeline.run → prediction JSONL → evaluator | Реальная factory, артефакты и private configs; gold отсекается allowlist до extractor/normalizers |
 | Real Docker | read-only /models volume | Реальные dependencies, factory entrypoint, offline reload и CPU/GPU profiles |
 
-Сигнатуры extraction/normalization сохраняются. Очередь пока 0 (429), concurrency=1, отмена HTTP не освобождает физический slot. Зависший native engine требует stopping/process isolation; безопасный inference timeout ещё не реализован.
+Сигнатуры extraction/normalization сохраняются. Очередь пока 0 (429), concurrency=1, отмена HTTP не освобождает физический slot. MWS_INFERENCE_TIMEOUT_SEC ограничивает HTTP-ожидание (504), но не native inference; зависший engine требует cooperative stopping/process isolation.
 
 Acceptance: артефакт загружен из экспортированного каталога → real bridge → DE stages → валидный output → HTTP/UI с is_mock=false и корректным model_id → offline prediction IDs/schema preflight → evaluator → benchmark. Fake bridge используется только в тестах, не является acceptance real модели.

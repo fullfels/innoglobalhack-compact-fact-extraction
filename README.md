@@ -35,6 +35,8 @@ Docker smoke: `python scripts/smoke.py http://127.0.0.1:8000`. После про
 
 См. [docs/INTEGRATION_V1.md](docs/INTEGRATION_V1.md). Реальные веса, DE normalizers и семантическое качество пока не реализованы. Чужие `src/data`, `src/normalizers`, `src/ml`, evaluator и dataset не создавались и не изменялись.
 
+Единый проверочный snapshot и запуск после передачи ML-артефактов: [первый real inference, 10/383 calls и A/B/C](docs/FIRST_REAL_INFERENCE.md). Для real API используется `python -m scripts.real_smoke --help`; обычный `scripts/smoke.py` проверяет только mock. Текущий статус PR/review и повторных проверок: [INTEGRATION_STATUS.md](docs/INTEGRATION_STATUS.md).
+
 
 ## Командный репозиторий
 
@@ -55,7 +57,7 @@ cd innoglobalhack-compact-fact-extraction
 | data | Правила получения данных, manifests, независимые fixtures |
 | ml | Будущие configs/training/evaluation/experiment manifests |
 | artifacts | Инструкция хранения весов вне Git |
-| tests, scripts | 70 Python-тестов, 5 JS-тестов и HTTP smoke |
+| tests, scripts | Python/JS regression tests, mock и real HTTP smoke |
 | .github | Существующий CI, ownership и PR/issue templates |
 | docs | Спецификация, план, handoff и backlog |
 
@@ -71,8 +73,8 @@ cd innoglobalhack-compact-fact-extraction
 ## Regression tests R01–R03
 
 ```bash
-pytest -q                         # 69 Python cases; Docker sentinel skipped
-MWS_DOCKER_TESTS=1 pytest -q        # all 70 cases, requires Docker
+pytest -q                         # external evaluator/Docker checks may skip
+MWS_DOCKER_TESTS=1 pytest -q        # enables Docker sentinel; official evaluator supplied separately
 node --test tests/frontend.test.cjs # 5 UI controller cases, Node.js 22+
 ```
 

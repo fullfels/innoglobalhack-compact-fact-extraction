@@ -24,7 +24,7 @@ CandidateFact оборачивает Fact: object_key?, evidence_turns, temporal
 
 ## Ограничения первого прототипа
 
-Worker один, очередь 0 с 429 вместо предварительно предложенной очереди 8. Это сознательное упрощение для mock E2E; перед real integration нужны очередь ≤8, queue timeout ≤30s и cooperative stopping/изоляция worker для inference timeout. Timeout asyncio не добавлен: он не останавливает native/GPU вызов. Реальная загрузка и health lifecycle требуют артефактов. Нет измерений качества/ресурсов Qwen и заявлений о соответствии performance gates.
+Worker один, очередь 0 с 429 вместо предварительно предложенной очереди 8. Это сознательное упрощение; bounded queue остаётся отдельной задачей. MWS_INFERENCE_TIMEOUT_SEC ограничивает HTTP-ожидание с 504, сохраняя физический slot до завершения inference; он не останавливает native/GPU вызов. ManagedAdapter реализует общий load-once/close lifecycle, engine-specific loader и stopping/изоляция требуют ML-артефактов. Нет измерений качества/ресурсов Qwen и заявлений о соответствии performance gates.
 
 ## Backlog
 
@@ -41,4 +41,4 @@ Extractor.extract и Normalizer.normalize сохраняют прежние си
 
 InferenceWorker владеет task, HTTP coroutine ожидает его через shield. Отмена HTTP-ожидания не отменяет inference и не освобождает slot. Повторный запрос получает 429 до физического завершения. Graceful lifespan shutdown прекращает приём и ждёт текущую работу. Принудительный kill процесса не гарантирует завершение; зависший native inference требует будущего stopping/process isolation. Timeout не реализован искусственным снятием slot. Ошибка этапа сохраняет module/error_type в безопасном JSON log без сообщения исключения/транскрипта; HTTP содержит только module/code/request_id.
 
-Новые условия confirmation и descriptor требуют review DE/ML перед подключением. Статусы являются сигналом загрузчика, а не проверкой наличия файлов на диске при каждом запросе. Веса, реальная загрузка, engine-specific stopping, inference timeout, очередь и model manifests остаются задачами real integration.
+Новые условия confirmation и descriptor требуют review DE/ML перед подключением. Статусы являются сигналом загрузчика, а не проверкой наличия файлов на диске при каждом запросе. Веса, engine-specific loader/stopping, очередь и проверенный ML manifest остаются зависимостями real integration. Актуальный порядок подключения и требования к передаче: [FIRST_REAL_INFERENCE.md](FIRST_REAL_INFERENCE.md).
