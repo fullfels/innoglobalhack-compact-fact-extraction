@@ -67,3 +67,80 @@ def test_timeout_keeps_slot_and_shutdown_drains():
 @pytest.mark.parametrize('v',[0,-1,float('inf'),float('nan')])
 def test_invalid_timeout(v):
     with pytest.raises(ValueError):Settings(inference_timeout_sec=v)
+
+
+def test_close_waits_for_direct_adapter_inference():
+    from src.contracts.models import CallInput
+    entered,release,closed=threading.Event(),threading.Event(),threading.Event()
+    def infer(call,r):entered.set();assert release.wait(5);assert not closed.is_set();return MockExtractor().extract(call)
+    a=adapter(lambda r:LoadedModel(infer,closed.set));a.load()
+    with ThreadPoolExecutor(2) as pool:
+        inference=pool.submit(a.extract,CallInput.model_validate(CALL))
+        try:
+            assert entered.wait(1)
+            closing=pool.submit(a.close)
+            assert not closed.wait(.1), 'engine released while physical inference is active'
+        finally:release.set()
+        inference.result();closing.result()
+    assert closed.is_set() and a.state=='unloaded'
+
+
+def test_invalid_loaded_bridge_releases_allocated_session():
+    closed=[];a=adapter(lambda r:LoadedModel(None,lambda:closed.append(1)))
+    with pytest.raises(PipelineError):a.load()
+    assert a.state=='failed' and closed==[1]
+    a.close();assert closed==[1]
+
+
+def test_cancelled_startup_waits_for_loader_and_releases_resources():
+    import asyncio
+    async def scenario():
+        entered,release,closed=threading.Event(),threading.Event(),threading.Event()
+        def loader(r):entered.set();assert release.wait(5);return LoadedModel(lambda c,r:MockExtractor().extract(c),closed.set)
+        a=adapter(loader);app=create_app(Settings(mode='real'),Pipeline(a))
+        async def start():
+            async with app.router.lifespan_context(app):pass
+        startup=asyncio.create_task(start())
+        try:
+            assert await asyncio.to_thread(entered.wait,1)
+            startup.cancel();await asyncio.sleep(0);await asyncio.sleep(0)
+            assert not startup.done(), 'startup cancelled while loader owns untracked resources'
+            startup.cancel();await asyncio.sleep(0)
+        finally:release.set()
+        with pytest.raises(asyncio.CancelledError):await startup
+        assert closed.is_set() and a.state=='unloaded'
+    asyncio.run(scenario())
+
+
+def test_stopping_health_and_concurrent_close_are_safe():
+    entered,release=threading.Event(),threading.Event();closed=[]
+    def close():closed.append(1);entered.set();assert release.wait(5)
+    a=adapter(lambda r:LoadedModel(lambda c,r:MockExtractor().extract(c),close))
+    with TestClient(create_app(Settings(mode='real'),Pipeline(a))) as client, ThreadPoolExecutor(2) as pool:
+        first=pool.submit(a.close)
+        try:
+            assert entered.wait(1)
+            second=pool.submit(a.close)
+            assert client.get('/health').json()['model_state']=='stopping'
+            assert client.get('/health').status_code==503
+            assert client.post('/extract',json=CALL).status_code==503
+        finally:release.set()
+        first.result();second.result()
+    assert closed==[1]
+
+
+def test_cancelled_startup_failure_is_still_logged(caplog):
+    import asyncio
+    async def scenario():
+        entered,release=threading.Event(),threading.Event()
+        def loader(r):entered.set();assert release.wait(5);raise RuntimeError('PRIVATE LOAD DETAILS')
+        a=adapter(loader);app=create_app(Settings(mode='real'),Pipeline(a))
+        async def start():
+            async with app.router.lifespan_context(app):pass
+        t=asyncio.create_task(start())
+        assert await asyncio.to_thread(entered.wait,1)
+        t.cancel();release.set()
+        with pytest.raises(asyncio.CancelledError):await t
+    asyncio.run(scenario())
+    assert 'MODEL_LOAD_FAILED' in caplog.text and 'RuntimeError' in caplog.text
+    assert 'PRIVATE LOAD DETAILS' not in caplog.text
