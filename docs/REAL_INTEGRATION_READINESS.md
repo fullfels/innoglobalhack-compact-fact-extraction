@@ -1,0 +1,17 @@
+# Managed lifecycle and first real E2E (T19/T20)
+
+This PR depends on R01–R03 PR #47 (cancellation-safe worker logging). No Qwen loader/engine/weights or DE rules are invented. T20 remains open.
+
+ML constructs ManagedAdapter(ModelResources(model_path, tokenizer, inference_config), loader, descriptor=ModelDescriptor(public_model_id,'real',engine), revision=..., artifact_sha256=..., dtype=..., context=..., parameters=..., manifest_id=...). Device belongs in inference_config and must be honored by the ML loader. Artifact metadata is reported by ML, not independently verified by this generic wrapper; validate exported files/hashes in the engine-specific loader.
+
+loader(resources) -> LoadedModel(inference=bridge, close=release_resources). bridge retains the existing (CallInput, ModelResources) -> CandidateBatch contract. Loading is lock-protected, once per adapter instance, not per request. Failures set failed and produce safe diagnostics; there is no hidden retry. A new adapter/process is required after close or failed load.
+
+A trusted local factory module:function returns Pipeline(adapter, ordered_normalizers). Set MWS_MODE=real and MWS_PIPELINE_FACTORY=team.module:build_pipeline. The factory has no arguments and constructs resources from team-owned deployment configuration. Do not accept factory paths or private model paths from HTTP input. Use one uvicorn worker. In lifespan, load runs in a thread before accepting requests, then readiness reflects adapter state. Failed load leaves an HTTP process serving health/extract 503, with no mock fallback. /model/info exposes only whitelisted public artifact metadata. Weights stay in read-only /models; Docker still requires ML engine dependencies and factory module to be supplied.
+
+MWS_INFERENCE_TIMEOUT_SEC is optional, finite and positive. HTTP deadline returns 504 INFERENCE_TIMEOUT_SLOT_RETAINED: it cancels the HTTP waiter, not native inference. The slot stays busy (429 for new work) until the physical task ends; detached failures retain correlation logging. This timeout bounds the HTTP wait, not GPU execution. A hung engine still requires cooperative stopping/process isolation and restart policy. Shutdown drains the worker before calling LoadedModel.close. Forced kill is not graceful shutdown.
+
+First real acceptance requires actual checkpoint+tokenizer+bridge+loader, DE normalizers/catalog, approved fixture and metadata manifest. Run exported artifact offline, exercise HTTP is_mock=false/model_id/source, save prediction JSONL, preflight IDs/schema then execute official evaluator. Controlled fake lifecycle tests do not prove Qwen works. No task is marked complete from fake results.
+
+## Audit hardening
+
+The adapter serializes inference/resource close, exposes stopping during release and rejects reentrant close from resource callbacks. Invalid LoadedModel handles are released when possible; if a loader raises before returning any handle, it must clean its own partial engine allocation. Startup cancellation waits for the loader and closes any resulting session before propagating cancellation. Repeated shutdown cancellation cannot release ownership early. Loader errors after cancellation are still logged safely. Fatal engine/OOM recovery is not invented: ML must signal unusable resources and provide a tested restart policy.
