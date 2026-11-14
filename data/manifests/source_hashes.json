@@ -1,0 +1,42 @@
+{
+  "README.md": {
+    "bytes": 4399,
+    "sha256": "89e62da2d9762cb6449ad37a3d806c862f2d7df80d008cbc02775273f4366509"
+  },
+  "schema.md": {
+    "bytes": 6409,
+    "sha256": "8435f897c4d848a696c2bc5aecf061914d251296ffb2e0312f2d2d907436484b"
+  },
+  "catalog.json": {
+    "bytes": 16809,
+    "sha256": "b7579c704e03e76e174e54bf7e7099171bc62301a2cfd8f5b3c7838b552701cb"
+  },
+  "train.jsonl": {
+    "bytes": 31039884,
+    "sha256": "62cb4af045ab12dbc854d71532b3b796ef501f4a232359e98549863ae0476fcb"
+  },
+  "val.jsonl": {
+    "bytes": 3119768,
+    "sha256": "fb0dd73bba4b642ca18538751ce4a64d40a569aa7edd1a2a2b595af3c6b6ca83"
+  },
+  "baseline_pred.jsonl": {
+    "bytes": 547648,
+    "sha256": "11a6685758b872c81b16bb5f3d6eac9667d91a92d40760d1153a0eacd7d02ab6"
+  },
+  "baseline_metrics.json": {
+    "bytes": 280,
+    "sha256": "cc6858b774f4fbd37e1e8fa4b7430af53cc6465e504dee8c0a80a1e71cb456b4"
+  },
+  "case_metrics.py": {
+    "bytes": 8521,
+    "sha256": "dffec9b8b20c5a8a101a33a27b1672f2b6195f00ab60f021a1c14b31eeeacabd"
+  },
+  "Кейс_CompactFactExtraction.pdf": {
+    "bytes": 150935,
+    "sha256": "1eb21cb72c1ea5ee97d42bca0aa086525979bd5f25fec4728362cc80c42aa553"
+  },
+  "Критерии_оценивания_МТС_MWS_CompactFactExtraction.pdf": {
+    "bytes": 134735,
+    "sha256": "465a53ac3d3a0e10d6ea2178951256fb7ffd7ec7f36e50ef3058dfc8e9489528"
+  }
+}

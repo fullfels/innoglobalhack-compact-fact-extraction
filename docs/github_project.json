@@ -1,0 +1,38 @@
+{
+  "url": "https://github.com/users/fullfels/projects/1",
+  "id": "PVT_kwHOEveLkM4BrhEt",
+  "items": 45,
+  "status_options": [
+    {
+      "id": "9fbff31a",
+      "name": "Backlog"
+    },
+    {
+      "id": "2ef7fe09",
+      "name": "Ready"
+    },
+    {
+      "id": "5d4fa634",
+      "name": "In Progress"
+    },
+    {
+      "id": "7b4d8867",
+      "name": "In Review"
+    },
+    {
+      "id": "9fd970a8",
+      "name": "Blocked"
+    },
+    {
+      "id": "a4595e4b",
+      "name": "Done"
+    }
+  ],
+  "role_field": "PVTSSF_lAHOEveLkM4BrhEtzhpzd9g",
+  "priority_field": "PVTSSF_lAHOEveLkM4BrhEtzhpzd98",
+  "done": [
+    "T16",
+    "T17",
+    "T18"
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "repository": "fullfels/innoglobalhack-compact-fact-extraction",
+  "tasks": {
+    "T01": {
+      "number": 1,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/1",
+      "role": "FS"
+    },
+    "T02": {
+      "number": 2,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/2",
+      "role": "FS"
+    },
+    "T03": {
+      "number": 3,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/3",
+      "role": "DE"
+    },
+    "T04": {
+      "number": 4,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/4",
+      "role": "DE"
+    },
+    "T05": {
+      "number": 5,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/5",
+      "role": "DE"
+    },
+    "T06": {
+      "number": 6,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/6",
+      "role": "ML"
+    },
+    "T07": {
+      "number": 7,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/7",
+      "role": "ML"
+    },
+    "T08": {
+      "number": 8,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/8",
+      "role": "ML"
+    },
+    "T09": {
+      "number": 9,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/9",
+      "role": "ML"
+    },
+    "T10": {
+      "number": 10,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/10",
+      "role": "ML"
+    },
+    "T11": {
+      "number": 11,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/11",
+      "role": "ML"
+    },
+    "T12": {
+      "number": 12,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/12",
+      "role": "DE"
+    },
+    "T13": {
+      "number": 13,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/13",
+      "role": "DE"
+    },
+    "T14": {
+      "number": 14,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/14",
+      "role": "DE"
+    },
+    "T15": {
+      "number": 15,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/15",
+      "role": "DE"
+    },
+    "T16": {
+      "number": 16,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/16",
+      "role": "FS"
+    },
+    "T17": {
+      "number": 17,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/17",
+      "role": "FS"
+    },
+    "T18": {
+      "number": 18,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/18",
+      "role": "FS"
+    },
+    "T19": {
+      "number": 19,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/19",
+      "role": "FS"
+    },
+    "T20": {
+      "number": 20,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/20",
+      "role": "FS"
+    },
+    "T21": {
+      "number": 21,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/21",
+      "role": "ML"
+    },
+    "T22": {
+      "number": 22,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/22",
+      "role": "ML"
+    },
+    "T23": {
+      "number": 23,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/23",
+      "role": "ML"
+    },
+    "T24": {
+      "number": 24,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/24",
+      "role": "ML"
+    },
+    "T25": {
+      "number": 25,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/25",
+      "role": "ML"
+    },
+    "T26": {
+      "number": 26,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/26",
+      "role": "FS"
+    },
+    "T27": {
+      "number": 27,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/27",
+      "role": "FS"
+    },
+    "T28": {
+      "number": 28,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/28",
+      "role": "FS"
+    },
+    "T29": {
+      "number": 29,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/29",
+      "role": "DE"
+    },
+    "T30": {
+      "number": 30,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/30",
+      "role": "DE"
+    },
+    "T31": {
+      "number": 31,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/31",
+      "role": "ML"
+    },
+    "T32": {
+      "number": 32,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/32",
+      "role": "DE"
+    },
+    "T33": {
+      "number": 33,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/33",
+      "role": "ML"
+    },
+    "T34": {
+      "number": 34,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/34",
+      "role": "FS"
+    },
+    "T35": {
+      "number": 35,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/35",
+      "role": "ML"
+    },
+    "T36": {
+      "number": 36,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/36",
+      "role": "DE"
+    },
+    "T37": {
+      "number": 37,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/37",
+      "role": "ML"
+    },
+    "T38": {
+      "number": 38,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/38",
+      "role": "FS"
+    },
+    "T39": {
+      "number": 39,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/39",
+      "role": "DE"
+    },
+    "T40": {
+      "number": 40,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/40",
+      "role": "ML"
+    },
+    "T41": {
+      "number": 41,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/41",
+      "role": "FS"
+    },
+    "T42": {
+      "number": 42,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/42",
+      "role": "FS"
+    },
+    "T43": {
+      "number": 43,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/43",
+      "role": "ML"
+    },
+    "T44": {
+      "number": 44,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/44",
+      "role": "DE"
+    },
+    "T45": {
+      "number": 45,
+      "url": "https://github.com/fullfels/innoglobalhack-compact-fact-extraction/issues/45",
+      "role": "ML"
+    }
+  }
+}

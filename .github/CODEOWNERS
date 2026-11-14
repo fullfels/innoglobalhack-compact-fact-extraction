@@ -1,0 +1,13 @@
+# Only verified accounts with current repository access may be active owners.
+# QFa1: invitation accepted; write access verified via GitHub API.
+# DE: username pending. See docs/TEAM_WORKFLOW.md.
+* @fullfels
+/src/contracts/ @fullfels @QFa1
+/src/pipeline/ @fullfels
+/src/api/ @fullfels
+/frontend/ @fullfels
+/.github/ @fullfels
+/docs/ @fullfels
+
+/ml/ @QFa1
+/src/pipeline/adapters.py @fullfels @QFa1
