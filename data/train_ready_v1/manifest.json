@@ -1,0 +1,58 @@
+{
+  "dataset_version": "train-ready-v1",
+  "source_train_file": "C:\\Users\\saded\\Downloads\\train.jsonl",
+  "source_train_sha256": "62cb4af045ab12dbc854d71532b3b796ef501f4a232359e98549863ae0476fcb",
+  "source_val_sha256": "fb0dd73bba4b642ca18538751ce4a64d40a569aa7edd1a2a2b595af3c6b6ca83",
+  "val_account_overlap": 0,
+  "random_seed": 42,
+  "split_strategy": "GroupShuffleSplit by account_id",
+  "counts": {
+    "total_calls": 3926,
+    "train_calls": 3334,
+    "dev_calls": 592,
+    "train_accounts": 2822,
+    "dev_accounts": 499,
+    "train_facts": 15682,
+    "dev_facts": 2793
+  },
+  "leakage_checks": {
+    "account_overlap_train_dev": 0,
+    "call_overlap_train_dev": 0,
+    "passed": true
+  },
+  "transformations_and_qa": {
+    "cleared_mismatched_span_quote": 5602,
+    "fixed_broken_object_name": 730,
+    "fixed_obj_type:other->client": 335,
+    "fixed_obj_type:other->device": 26,
+    "fixed_obj_type:other->service": 105,
+    "fixed_obj_type:other->ticket": 264,
+    "flag:has_empty_facts": 147,
+    "flag:is_long_dialogue": 448,
+    "flag:is_multi_session": 414,
+    "flag:is_speaker_inverted": 139,
+    "removed_empty_turns": 5,
+    "stripped_confirmed_field": 18475,
+    "ungrounded_asr_cleaned_quote": 3879
+  },
+  "ml_contract_notes": {
+    "input_fields": [
+      "call_id",
+      "started_at",
+      "duration_sec",
+      "series",
+      "turns",
+      "noise_level"
+    ],
+    "target_field": "facts",
+    "metadata_excluded_from_model": [
+      "qa_meta"
+    ],
+    "empty_turns_policy": "Empty string turns removed while preserving original turn.idx and exact text.",
+    "span_policy": "Invalid/mismatched spans cleared to null; valid spans are Python code-point [start, end)."
+  },
+  "outputs": {
+    "train_ready_sha256": "d2d9005086a126013cbb370218cee3e96a50d5b29dc997a2de60b7fa76cdb421",
+    "dev_ready_sha256": "12a1489bdc12f7500adf574c1fd0e58dca705f7e53fc2e66a4aefa0f2f7d3acd"
+  }
+}
