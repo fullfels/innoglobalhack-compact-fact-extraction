@@ -36,6 +36,8 @@ def verify_archive(root, originals=None):
         if row["executed_eol"] == "CRLF":
             reconstructed = lf.replace(b"\n", b"\r\n")
         elif row["executed_eol"] == "LF":
+            if raw != lf:
+                raise ValueError("Unexpected EOL change of exact-LF artifact: " + name)
             reconstructed = lf
         else:
             raise ValueError("Unsupported executed EOL policy")

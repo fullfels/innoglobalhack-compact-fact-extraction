@@ -70,6 +70,12 @@ class ProvenanceTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.verify_archive(self.root)
 
+    def test_exact_lf_prompt_is_not_silently_normalized(self):
+        path = self.root / "source/prompt.txt"
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+        with self.assertRaises(ValueError):
+            module.verify_archive(self.root)
+
     def test_missing_originals_are_not_claimed_verified(self):
         with self.assertRaises(FileNotFoundError):
             module.verify_archive(self.root, self.root / "missing")
