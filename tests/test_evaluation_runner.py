@@ -162,6 +162,7 @@ def test_evaluator_must_not_change_validated_inputs(bundle,tmp_path,monkeypatch)
         Path(args[2]).write_text('{}\n')
         Path(args[-1]).write_text(json.dumps(dict.fromkeys(['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'],1)))
         return subprocess.CompletedProcess(args,0,stdout='',stderr='')
+    monkeypatch.setattr('src.experiments.evaluate.identity',lambda:{})
     monkeypatch.setattr('src.experiments.evaluate.subprocess.run',changed)
     with pytest.raises(ExperimentError):
         evaluate(gold_path=g,predictions=p,evaluator=script,out=tmp_path/'out',model_id='x',experiment_id='x')
