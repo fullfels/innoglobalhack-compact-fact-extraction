@@ -1,7 +1,30 @@
 """Run-state regression tests only; no Torch import or simulated quality scores."""
 import json
-from ml.qwen.train import record_failure, diagnostic_subset
+from ml.qwen.train import record_failure, diagnostic_subset, token_loss_weights, validate_lora_targets
 import pytest
+
+
+def test_loss_is_invariant_to_partitioning_the_same_supervised_tokens():
+    rows = [{"labels": [-100]*3 + [1]*2}, {"labels": [1]*8}]
+    a = sum(w*l for w,l in zip(token_loss_weights(rows), [.1, .6]))
+    partitioned = [{"labels": [1]*2}, {"labels": [1]*3}, {"labels": [1]*5}]
+    b = sum(w*l for w,l in zip(token_loss_weights(partitioned), [.1, .4, .72]))
+    assert a == pytest.approx(.5)
+    assert b == pytest.approx(a)
+
+
+def test_five_token_empty_answer_does_not_outweigh_long_fact_answer():
+    weights = token_loss_weights([{"labels": [-100]*100+[1]*5}, {"labels": [-100]*100+[1]*500}])
+    assert weights[1] / weights[0] == pytest.approx(100.)
+    with pytest.raises(ValueError, match="supervised"):
+        token_loss_weights([{"labels": [-100]*10}])
+
+
+def test_minimized_peft_target_suffixes_cannot_accidentally_include_vision():
+    expected = ['model.language_model.layers.0.q_proj']
+    validate_lora_targets(expected + ['model.visual.qkv'], expected, ['q_proj'])
+    with pytest.raises(ValueError, match='exactly'):
+        validate_lora_targets(expected + ['model.visual.q_proj'], expected, ['q_proj'])
 
 
 def test_paired_diagnostic_subset_uses_stable_prefix_without_label_selection():

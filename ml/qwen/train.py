@@ -40,6 +40,29 @@ def autocast_for(model):
     return torch.autocast("cuda", dtype=torch.float16, enabled=model.dtype == torch.float16)
 
 
+def supervised_tokens(row):
+    n = sum(label != -100 for label in row["labels"])
+    if n == 0:
+        raise ValueError("No supervised tokens")
+    return n
+
+
+def token_loss_weights(rows):
+    counts = [supervised_tokens(row) for row in rows]
+    if not counts:
+        raise ValueError("Empty accumulation window")
+    total = sum(counts)
+    return [n / total for n in counts]
+
+
+def validate_lora_targets(available, expected, selectors):
+    if not isinstance(selectors, (list, tuple, set)) or not selectors:
+        raise ValueError("Expected explicit LoRA target names")
+    selected = {name for name in available if any(name == key or name.endswith('.' + key) for key in selectors)}
+    if selected != set(expected):
+        raise ValueError("Adapter targets do not resolve to exactly the expected language layers")
+
+
 def record_failure(out, phase, error_type, own_run):
     out = Path(out)
     if out.exists() and not own_run:
@@ -80,6 +103,18 @@ def suffix_loss(model, encoded, *, device="cuda"):
 
 def check_loss_equivalence(model, tokenizer):
     import torch
+    import torch.nn.functional as F
+    logits = torch.tensor([[[3.,0.,0.]]*4, [[3.,0.,0.]]*4], device="cuda", requires_grad=True)
+    target = torch.tensor([[-100,-100,0,0], [1,1,1,1]], device="cuda")
+    reference_tokens = F.cross_entropy(logits.reshape(-1,3), target.reshape(-1), ignore_index=-100)
+    toy_rows = [{"labels": row} for row in target.tolist()]
+    weights = token_loss_weights(toy_rows)
+    combined = sum(w*F.cross_entropy(logits[i], target[i], ignore_index=-100) for i,w in enumerate(weights))
+    torch.testing.assert_close(reference_tokens, combined, atol=1e-6, rtol=1e-6)
+    torch.testing.assert_close(torch.autograd.grad(reference_tokens, logits, retain_graph=True)[0],
+                               torch.autograd.grad(combined, logits)[0], atol=1e-6, rtol=1e-6)
+    normalization_check = {"passed": True, "reference_token_mean": float(reference_tokens.detach()),
+                           "weighted_accumulation": float(combined.detach()), "gradient_equivalence": True}
     p = tokenizer.apply_chat_template([{"role": "user", "content": "Верни JSON."}], tokenize=False,
                                       add_generation_prompt=True, enable_thinking=False)
     prefix = tokenizer.encode(p, add_special_tokens=False)
@@ -93,7 +128,8 @@ def check_loss_equivalence(model, tokenizer):
         optimized = suffix_loss(model, encoded)
     torch.testing.assert_close(reference.float(), optimized.float(), rtol=.003, atol=.003)
     return {"passed": True, "full_masked_loss": float(reference), "suffix_loss": float(optimized),
-            "prefix_tokens_masked": len(prefix), "answer_tokens": len(ids) - len(prefix)}
+            "prefix_tokens_masked": len(prefix), "answer_tokens": len(ids) - len(prefix),
+            "accumulation_token_normalization": normalization_check}
 
 
 def input_call(raw):
@@ -175,10 +211,14 @@ def diagnostic_subset(calls, limit):
 
 def teacher_loss(model, rows):
     import torch
-    model.eval(); values = []
+    model.eval(); total_loss, total_tokens = 0., 0
     with torch.no_grad(), autocast_for(model):
-        for row in rows: values.append(float(suffix_loss(model, row)))
-    return statistics.mean(values)
+        for row in rows:
+            n = supervised_tokens(row)
+            value = float(suffix_loss(model, row))
+            if not math.isfinite(value): raise RuntimeError("Non-finite dev loss")
+            total_loss += value * n; total_tokens += n
+    return total_loss / total_tokens
 
 
 def checkpoint(model, tokenizer, path, data_root, step, probe):
@@ -212,10 +252,13 @@ def main():
     ap.add_argument("--budget-hours", type=float, default=4)
     ap.add_argument("--full-eval", action="store_true")
     ap.add_argument("--precision", choices=("float16", "float32"), default="float32")
+    ap.add_argument("--initial-adapter", type=Path, help="Warm-start adapter only; starts a new optimizer, not a training resume")
+    ap.add_argument("--min-timing-steps", type=int, default=50)
+    ap.add_argument("--diagnostic-every", type=int, default=0)
     ap.add_argument("--baseline-count", type=int, default=2,
                     help="Fixed train/dev prefix for paired before/after diagnostics; not full quality evaluation")
     args = ap.parse_args()
-    if args.steps < 1 or args.baseline_count < 1 or (args.accumulation is not None and args.accumulation < 1) or args.learning_rate <= 0 or args.budget_hours <= 0:
+    if args.steps < 1 or args.diagnostic_every < 0 or args.min_timing_steps < 1 or args.baseline_count < 1 or (args.accumulation is not None and args.accumulation < 1) or args.learning_rate <= 0 or args.budget_hours <= 0:
         ap.error("steps/accumulation/learning-rate/budget-hours must be positive")
     import torch
     from peft import LoraConfig, PeftModel, get_peft_model
@@ -242,6 +285,11 @@ def main():
     config = {"phase": args.phase, "seed": seed, "base_model": MODEL, "base_revision": REVISION,
               "dtype": args.precision, "quantization": None, "rank": 16, "alpha": 32, "dropout": 0.,
               "grad_scaler_enabled": args.precision == "float16",
+              "loss_normalization": "supervised_tokens_across_accumulation_window",
+              "dev_loss_normalization": "all_supervised_dev_tokens",
+              "min_timing_steps": args.min_timing_steps,
+              "diagnostic_every": args.diagnostic_every,
+              "initialization": {"kind": "plain_base"},
               "learning_rate": args.learning_rate, "accumulation": args.accumulation or (2 if args.phase == "pilot" else 4),
               "baseline_diagnostic_count_per_split": args.baseline_count,
               "diagnostic_policy": "Fixed first N calls, identical before/after; full after-train and inner-dev measured separately. Count reduced after measured 122s runaway base generation; no metric representativeness claim.",
@@ -265,8 +313,19 @@ def main():
     dev_rows = [tokenize.encode_record(effective_example(r), tokenizer, max_length=config["training_context"]) for r in read(dev_path)]
     target_names = [name for name, module in model.named_modules() if isinstance(module, torch.nn.Linear) and ".language_model.layers." in name]
     assert target_names and all("visual" not in name for name in target_names)
-    model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, lora_dropout=0., bias="none",
-                            task_type="CAUSAL_LM", target_modules=target_names))
+    if args.initial_adapter:
+        adapter_config = json.loads((args.initial_adapter / "adapter_config.json").read_text(encoding="utf-8"))
+        if (adapter_config.get("base_model_name_or_path") != MODEL or adapter_config.get("r") != 16
+                or adapter_config.get("lora_alpha") != 32):
+            raise RuntimeError("Warm-start adapter does not match base/LoRA configuration")
+        validate_lora_targets([name for name, module in model.named_modules() if isinstance(module, torch.nn.Linear)],
+                              target_names, adapter_config.get("target_modules"))
+        model = PeftModel.from_pretrained(model, args.initial_adapter, is_trainable=True)
+        config["initialization"] = {"kind": "warm_start_adapter_new_optimizer", "comparison_baseline": "initial_adapter_not_plain_base",
+            "sha256": {p.name: sha(p) for p in sorted(args.initial_adapter.iterdir()) if p.is_file()}}
+    else:
+        model = get_peft_model(model, LoraConfig(r=16, lora_alpha=32, lora_dropout=0., bias="none",
+                                task_type="CAUSAL_LM", target_modules=target_names))
     for parameter in model.parameters():
         if parameter.requires_grad: parameter.data = parameter.data.float()
     config["target_modules"] = target_names
@@ -304,19 +363,26 @@ def main():
         if position >= len(order):
             random.Random(seed + step).shuffle(order); position = 0
         count = min(accumulation, len(order) - position) if args.phase == "main" else accumulation
-        losses = []
+        batch_rows = []
         for _ in range(count):
             if position >= len(order): random.Random(seed + step).shuffle(order); position = 0
             row = train_rows[order[position]]; position += 1
+            batch_rows.append(row)
+        weights = token_loss_weights(batch_rows)
+        losses = []
+        for row, weight in zip(batch_rows, weights):
             with autocast_for(model): loss = suffix_loss(model, row)
             if not torch.isfinite(loss): raise RuntimeError("Non-finite training loss")
-            losses.append(float(loss.detach())); scaler.scale(loss / count).backward()
+            losses.append(float(loss.detach())); scaler.scale(loss * weight).backward()
         scaler.unscale_(optimizer); norm = torch.nn.utils.clip_grad_norm_(parameters, 1.)
         if args.precision == "float32" and not torch.isfinite(norm):
             raise RuntimeError("Non-finite FP32 gradient; refusing optimizer update")
         old_scale = scaler.get_scale(); scaler.step(optimizer); scaler.update()
         torch.cuda.synchronize()
-        log = {"step": step + 1, "loss": statistics.mean(losses), "microbatches": count, "learning_rate": optimizer.param_groups[0]["lr"],
+        log = {"step": step + 1, "loss": sum(v*w for v,w in zip(losses, weights)),
+               "mean_example_loss_diagnostic_only": statistics.mean(losses),
+               "supervised_tokens": sum(supervised_tokens(row) for row in batch_rows),
+               "microbatches": count, "learning_rate": optimizer.param_groups[0]["lr"],
                "elapsed_sec": time.perf_counter() - start, "gradient_norm": float(norm),
                "optimizer_step_skipped": scaler.get_scale() < old_scale,
                "cuda_allocated_mib": torch.cuda.max_memory_allocated() / 1024**2,
@@ -324,6 +390,9 @@ def main():
         if not math.isfinite(log["gradient_norm"]): log["gradient_norm"] = None
         logs.append(log); save(args.out / "training_log.json", logs)
         print("step", step + 1, "loss", round(log["loss"], 5), "seconds", round(log["elapsed_sec"], 2), flush=True)
+        if args.diagnostic_every and (step + 1) % args.diagnostic_every == 0:
+            print("stage intermediate_generation", step + 1, flush=True)
+            quality_run(model, tokenizer, diagnostic_train, data_root, args.out / f"step_{step+1}_diagnostic")
         if (step + 1) % (16 if args.phase == "pilot" else max(1, steps // 2)) == 0 or step + 1 == steps:
             current = teacher_loss(model, dev_rows)
             log["dev_loss"] = current
@@ -372,7 +441,7 @@ def main():
     after_diagnostic_train = quality_run(model, tokenizer, diagnostic_train, data_root, args.out / "after_train_same_diagnostic")
     after_diagnostic_dev = quality_run(model, tokenizer, diagnostic_dev, data_root, args.out / "after_dev_same_diagnostic")
     gates = {"loss_equivalence": equivalence["passed"], "reload": reload_result["passed"],
-             "fifty_timing_steps_measured": len(timing) == 50,
+             "requested_timing_steps_measured": len(timing) >= args.min_timing_steps,
              "dev_loss_improved": best_step is not None,
              "paired_diagnostic_train_recall_improved": after_diagnostic_train["metrics"]["fact_recall"] > before_train["metrics"]["fact_recall"],
              "train_fact_recall_at_least_half": after_train["metrics"]["fact_recall"] >= .5,
@@ -385,8 +454,10 @@ def main():
               "dataset_manifest_sha256": sha(data_root / "manifest.json"),
               "training_steps": steps, "selected_checkpoint_step": best_step or steps,
               "training_elapsed_sec_including_dev_checks": elapsed_training, "timing_steps": len(timing),
+              "requested_min_timing_steps": args.min_timing_steps,
+              "initialization": config["initialization"], "loss_normalization": config["loss_normalization"],
               "seconds_per_microbatch_median": per_micro, "eta_main_one_epoch_sec": eta,
-              "eta_note": "Measured last50 steps; one full epoch plus20% margin, estimate not guarantee.",
+              "eta_note": "Measured up to last50 actual steps (count reported); one full epoch plus20% margin, estimate not guarantee.",
               "long_call_probe": long_probe, "before_train": before_train, "after_train": after_train,
               "before_dev": before_dev, "after_dev": after_dev, "reload": reload_result,
               "paired_diagnostics": {"before_train": before_train, "after_train": after_diagnostic_train,
