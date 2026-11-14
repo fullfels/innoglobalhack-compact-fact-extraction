@@ -31,7 +31,7 @@ DE: `data/<task>`, ML: `ml/<task>`. Связать PR с существующи�
 
 Ожидаются: exported checkpoint/base+adapter; tokenizer и special tokens; revision/SHA256/license/provenance; inference dependencies и CPU/GPU profile; context/window/stop policy; deterministic inference config и seed; bridge/loader; manifest A/B/C; один real fixture и команда reload без сети. Training код/targets остаются в зоне ML/DE.
 
-## DE / username ожидается
+## DE / Eduard-Sadykov
 
 - `Normalizer.normalize(batch: CandidateBatch, call: CallInput) -> CandidateBatch`. FS передаёт ordered tuple в `Pipeline(adapter, normalizers)`.
 - Порядок: catalog → temporal → state → polarity → grounding → общий output gate. Каталог передавать в конструктор этапа, не менять original turns и не использовать global state между calls.

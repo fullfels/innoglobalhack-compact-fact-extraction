@@ -1,5 +1,38 @@
 # Qwen acceptance and final PR review — 2026-11-14
 
+## Latest recheck: #53 b95cfce / #54 2a3be19 / #55 7e42f93
+
+No trained model package was found. GitHub Actions artifacts: 0; no repository releases, local export/checkpoint/tokenizer or HF cache. Eduard-Sadykov is now confirmed by the user and GitHub API as an existing write collaborator; CODEOWNERS/team handoff updated without permission expansion/invitations. DE normalizers still not supplied.
+
+The five previously reported ML handoff gaps are **not fixed** on latest #53; inherited runtime in #54 also retains them. New [REQUEST_CHANGES on #53](https://github.com/fullfels/innoglobalhack-compact-fact-extraction/pull/53#pullrequestreview-5905082280) and [interface review on #54](https://github.com/fullfels/innoglobalhack-compact-fact-extraction/pull/54#pullrequestreview-5905082718) record independent probes. No ML loader/training edits were made.
+
+| Readiness gate | #53 b95cfce | #54 2a3be19 |
+|---|---|---|
+| Empty/partial checksum inventory and non-bool quality gate rejected (3 cases) | FAIL | FAIL |
+| Partial adapter-load failure releases allocated sentinel before error propagation | FAIL | FAIL |
+| cuda:0 preserves indexed CUDA dtype semantics | FAIL | FAIL |
+| Config-aware evaluation entrypoint supplied | absent | absent |
+| BenchmarkTarget/config/device/load/close entrypoint supplied | absent | absent |
+
+These are **14 failed readiness checks**, separate from the **183 passing default regression tests**. They are not GPU measurements. The controlled allocation test retains the loader error and verifies a weakref release callback: resource remains held by the failed-load traceback, confirming the missing cleanup path. CUDA uses stub torch/transformers only; no GPU availability/performance claims. #54 improves dtype propagation for exact cuda but leaves cuda:N handling unresolved. Latest 2a3be19 changes notebook numerics gates, not these runtime defects. Four latest #54 lightweight training guard tests passed; 5 Python notebook cells compiled without execution. No masking/hyperparameter/training-loop changes were made.
+
+Reproducible checks are FS-owned diagnostics in `checks/qwen_runtime_readiness.py`, explicitly outside the default testpaths=tests suite:
+
+```bash
+# Current #55 contains runtime #53; expected failure until ML fixes its handoff.
+PYTHONPATH="$PWD" python -m pytest -q checks/qwen_runtime_readiness.py
+# To check another immutable runtime without switching/rewriting ML branches:
+git show 2a3be19:ml/qwen/runtime.py > /tmp/qwen-runtime-reviewed.py
+MWS_REVIEW_RUNTIME_FILE=/tmp/qwen-runtime-reviewed.py PYTHONPATH="$PWD" \
+ python -m pytest -q checks/qwen_runtime_readiness.py
+```
+
+Entry names evaluation_factory/benchmark_factory reflect the requested handoff; if ML chooses other names, supply the approved module:function paths and point the checks at those implementations. A metadata-only wrapper that ignores config is not an acceptable fix. No failing readiness gate is marked passed by the green generic CI. After fixes, integrate these contracts into ML's required tests.
+
+Repeated current #55 default suite with original evaluator/Docker sentinel: **183 passed, 0 skipped**, 6.46 s; Node **5 passed**; Docker mock build/startup/HTTP/Compose **PASS**. Existing #50 manifest_id fix is present and its regression passed; no new FS runtime defect was confirmed. No duplicate real_smoke/API/factory/benchmark/evaluator was added. The previous accepted #52 archive and snapshots below remain historical evidence.
+
+Remaining operational order is unchanged: peer reviews + explicit owner merge permission for FS; ML fixes its owning runtime and provides verified export/dependencies/factories; Eduard-Sadykov hands off normalizers/resolvers/semantic fixtures; then offline reload → in-process API → real Uvicorn HTTP → diagnostic 10 → full 383. The runtime currently requires a genuinely reload-verified trained adapter and passed training gates. Do not forge these flags to run a base-only model. No new real inference/quality/latency/RAM/VRAM or T20 completion is claimed.
+
 ## PR #52: approved archive, not serving
 
 Latest reviewed SHA: `4958f94deb8dcf6f6c6ba7c4649bffe1e17c6700`; fixes `81bc6858` + exact-LF prompt guard. [Official APPROVE](https://github.com/fullfels/innoglobalhack-compact-fact-extraction/pull/52#pullrequestreview-5904735356) submitted; previous provenance thread resolved. PR remains open, no merge.
@@ -20,7 +53,7 @@ This clears the original P2. Historical parser incompatibilities do not block an
 | #51 | 26f5c23 | fs/benchmark-collector | open, CI success, no peer approval |
 | #52 | 4958f94 | main | open, CI success, approved archive |
 | #53 | b95cfce | fs/deep-integration-audit | **new ML bridge, draft**, CI success |
-| #54 | **7fffa46** (updated during review) | ml/t20-qwen35-candidate-bridge-20261114 | **LoRA pilot/numerics code, draft**, CI success; training not executed here |
+| #54 | **2a3be19** (latest recheck) | ml/t20-qwen35-candidate-bridge-20261114 | **LoRA pilot/numerics code, draft**, CI success; training not executed here |
 
 No DE PR/normalizer implementation or local checkpoint/export/tokenizer/HF cache found. main remains c8911a99936de3d7a06c5327e55abcc5fa28694e. Separate FS branch `codex/qwen-acceptance` starts from #53 and includes latest #50 fix; all current #46–#51 heads are ancestors. No main merge, force push, ML/DE source edits or training.
 

@@ -40,7 +40,7 @@ Docker smoke: `python scripts/smoke.py http://127.0.0.1:8000`. После про
 
 ## Командный репозиторий
 
-Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1 (активный write-доступ); DE: аккаунт ожидается. Текущий функционал — mock MVP, real Qwen и DE правила ещё не подключены.
+Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1; DE: Eduard-Sadykov (существующий write-доступ проверен). ML bridge находится в draft #53, real checkpoint и DE правила ещё не подключены. Актуальные blockers и отдельные readiness checks: [QWEN_ACCEPTANCE_STATUS](docs/QWEN_ACCEPTANCE_STATUS.md).
 
 ```bash
 git clone https://github.com/fullfels/innoglobalhack-compact-fact-extraction.git

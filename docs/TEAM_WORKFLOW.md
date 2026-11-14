@@ -1,8 +1,8 @@
 # Команда и статусы
 
-Owner/FS: fullfels. ML: QFa1, username подтверждён пользователем. DE: username ещё неизвестен. Цель — owner + два collaborators с write, без лишних admin. Invitation не равен активному доступу. Фактическое состояние: GITHUB_SETUP_REPORT.
+Owner/FS: fullfels. ML: QFa1. DE: Eduard-Sadykov — username подтверждён пользователем, существующий write проверен GitHub API 2026-11-14. Доступ не расширялся, повторные приглашения не отправлялись. Invitation не равен активному доступу. Историческая настройка: GITHUB_SETUP_REPORT.
 
-QFa1 принял invitation; write подтверждён API. CODEOWNERS уже содержит /ml/ @QFa1 и shared contracts/adapter с FS. После подтверждения DE — data/scripts-data/normalization. Shared src/contracts проверяют FS и DE/ML интеграторы по PR template, даже без автоматического назначения. CODEOWNERS сам не защищает ветку.
+QFa1 и Eduard-Sadykov имеют подтверждённый write. CODEOWNERS отражает ML и DE paths, canonical normalizers — src/normalizers. Shared src/contracts проверяют FS и DE/ML интеграторы по PR template, даже без автоматического назначения. CODEOWNERS сам не защищает ветку.
 
 Source backlog: [tasks.csv](tasks.csv) и [backlog](06_BACKLOG.md). Состав/DoD в CSV, оперативный статус в Issues. Синхронизация по точному [Txx] и Task ID, без duplicates/сброса human статусов; github_task_map.json сохраняет ссылки. Плановые сроки не означают фактическое выполнение.
 
