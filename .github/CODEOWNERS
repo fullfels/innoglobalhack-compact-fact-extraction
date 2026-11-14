@@ -1,8 +1,8 @@
 # Only verified accounts with current repository access may be active owners.
 # QFa1: invitation accepted; write access verified via GitHub API.
-# DE: username pending. See docs/TEAM_WORKFLOW.md.
+# Eduard-Sadykov: existing write access verified via GitHub API.
 * @fullfels
-/src/contracts/ @fullfels @QFa1
+/src/contracts/ @fullfels @QFa1 @Eduard-Sadykov
 /src/pipeline/ @fullfels
 /src/api/ @fullfels
 /frontend/ @fullfels
@@ -14,4 +14,7 @@
 
 /src/ml/ @QFa1
 /configs/train/ @QFa1
-# DE paths keep the default FS owner until the DE username is confirmed.
+/src/data/ @Eduard-Sadykov
+/src/normalizers/ @Eduard-Sadykov
+/data/ @Eduard-Sadykov
+/scripts/data/ @Eduard-Sadykov

@@ -38,9 +38,9 @@ FS перед merge проверяет tests+Docker job, review и инстру�
 |---|---|---|
 | FS / Tech Lead | @fullfels | src/contracts, src/pipeline, src/api, frontend, Docker/Compose, .github |
 | ML | @QFa1 (активный write) | src/ml, ml, configs/train |
-| DE | username ожидается | src/data, src/normalizers, data, scripts/data |
+| DE | @Eduard-Sadykov (активный write проверен API) | src/data, src/normalizers, data, scripts/data |
 
-Canonical normalizers: src/normalizers согласно 03_ARCHITECTURE; старое название src/normalization в ранних onboarding notes не требует второго pipeline. Существующие каталоги не перемещать без согласования. Shared contracts — FS owner, DE/ML reviewers по затронутому interface. CODEOWNERS содержит подтверждённые @fullfels и @QFa1; автоматический CODEOWNERS review не заменяет peer review автора.
+Canonical normalizers: src/normalizers согласно 03_ARCHITECTURE; старое название src/normalization в ранних onboarding notes не требует второго pipeline. Существующие каталоги не перемещать без согласования. Shared contracts — FS owner, DE/ML reviewers по затронутому interface. CODEOWNERS содержит подтверждённые @fullfels, @QFa1 и @Eduard-Sadykov; автоматический CODEOWNERS review не заменяет peer review автора.
 
 Branch protection для private repo текущего аккаунта возвращает GitHub HTTP 403 (требуется Pro либо другой поддерживающий private protection тариф). Репозиторий остаётся private. Поэтому обязательные CI/review пока командное правило, не серверная гарантия. Целевая конфигурация: `.github/branch-protection.json`. После доступности функции admin применяет её через GitHub API к main и проверяет GET protection; до этого не объявлять main защищённой.
 

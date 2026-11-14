@@ -1,0 +1,20 @@
+# ML supplies a reviewed Python 3.12 image with pinned Torch + ML + FS packages.
+# No dependency/model downloads happen in this build.
+ARG MWS_ENGINE_IMAGE
+FROM ${MWS_ENGINE_IMAGE}
+ARG MWS_ENGINE_IMAGE
+LABEL org.opencontainers.image.base.name=${MWS_ENGINE_IMAGE}
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 MWS_MODE=real \
+    MWS_PIPELINE_FACTORY=ml.qwen.runtime:factory HF_HOME=/hf-cache HF_HUB_OFFLINE=1
+COPY requirements.lock ./requirements.lock
+COPY src ./src
+COPY frontend ./frontend
+COPY ml/__init__.py ./ml/__init__.py
+COPY ml/qwen/__init__.py ml/qwen/bridge.py ml/qwen/prompting.py ml/qwen/runtime.py ml/qwen/requirements.txt ./ml/qwen/
+COPY scripts/qwen_runtime_preflight.py ./scripts/qwen_runtime_preflight.py
+USER 10001:10001
+EXPOSE 8000
+HEALTHCHECK --interval=30s --timeout=3s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+ENTRYPOINT ["python", "-m", "scripts.qwen_runtime_preflight"]
+CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

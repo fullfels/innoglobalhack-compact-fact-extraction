@@ -37,10 +37,12 @@ Docker smoke: `python scripts/smoke.py http://127.0.0.1:8000`. После про
 
 Единый проверочный snapshot и запуск после передачи ML-артефактов: [первый real inference, 10/383 calls и A/B/C](docs/FIRST_REAL_INFERENCE.md). Для real API используется `python -m scripts.real_smoke --help`; обычный `scripts/smoke.py` проверяет только mock. Текущий статус PR/review и повторных проверок: [INTEGRATION_STATUS.md](docs/INTEGRATION_STATUS.md).
 
+Отдельный [Qwen Docker/runtime profile](docs/REAL_RUNTIME_PROFILE.md) требует утверждённый engine image и read-only export/cache. Он проверен на offline/negative сценариях; настоящий model reload и GPU deployment пока BLOCKED.
+
 
 ## Командный репозиторий
 
-Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1 (активный write-доступ); DE: аккаунт ожидается. Текущий функционал — mock MVP, real Qwen и DE правила ещё не подключены.
+Private: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . Владелец/FS: fullfels; ML: QFa1; DE: Eduard-Sadykov (существующий write-доступ проверен). ML bridge находится в draft #53, real checkpoint и DE правила ещё не подключены. Актуальные blockers и отдельные readiness checks: [QWEN_ACCEPTANCE_STATUS](docs/QWEN_ACCEPTANCE_STATUS.md).
 
 ```bash
 git clone https://github.com/fullfels/innoglobalhack-compact-fact-extraction.git
