@@ -31,3 +31,17 @@ git push -u origin HEAD
 FS перед merge проверяет tests+Docker job, review и инструкции интеграции. Недоступную protection не представлять действующей; ограничения тарифа и приглашений в GITHUB_SETUP_REPORT. Срочный review допускается с причиной в PR. CODEOWNERS не заменяет защиту main.
 
 Данные: [data](data/README.md). Веса: [artifacts](artifacts/README.md). Роли и статусы: [workflow](docs/TEAM_WORKFLOW.md). Real acceptance: [ML](ml/README.md).
+
+## Ownership и серверные ограничения
+
+| Зона | Ответственный | Пути |
+|---|---|---|
+| FS / Tech Lead | @fullfels | src/contracts, src/pipeline, src/api, frontend, Docker/Compose, .github |
+| ML | @QFa1 (активный write) | src/ml, ml, configs/train |
+| DE | username ожидается | src/data, src/normalizers, data, scripts/data |
+
+Canonical normalizers: src/normalizers согласно 03_ARCHITECTURE; старое название src/normalization в ранних onboarding notes не требует второго pipeline. Существующие каталоги не перемещать без согласования. Shared contracts — FS owner, DE/ML reviewers по затронутому interface. CODEOWNERS содержит подтверждённые @fullfels и @QFa1; автоматический CODEOWNERS review не заменяет peer review автора.
+
+Branch protection для private repo текущего аккаунта возвращает GitHub HTTP 403 (требуется Pro либо другой поддерживающий private protection тариф). Репозиторий остаётся private. Поэтому обязательные CI/review пока командное правило, не серверная гарантия. Целевая конфигурация: `.github/branch-protection.json`. После доступности функции admin применяет её через GitHub API к main и проверяет GET protection; до этого не объявлять main защищённой.
+
+Первый real E2E: [integration handoff](docs/INTEGRATION_HANDOFF.md). Не создавать фиктивные collector/runner/loader для закрытия задач.

@@ -11,3 +11,7 @@
 
 /ml/ @QFa1
 /src/pipeline/adapters.py @fullfels @QFa1
+
+/src/ml/ @QFa1
+/configs/train/ @QFa1
+# DE paths keep the default FS owner until the DE username is confirmed.

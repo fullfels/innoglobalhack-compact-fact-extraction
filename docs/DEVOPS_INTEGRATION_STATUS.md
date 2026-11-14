@@ -1,0 +1,15 @@
+# GitHub workflow и real integration — проверка
+
+Существующая история сохранена: 65e4ee9 уже включает F01–F09 и 66 tests; 7d18c29 добавлен параллельной настройкой GitHub. Повторного пустого commit исправлений нет. Untracked github_task_map.json не включался этой задачей; позднее он был зафиксирован параллельной задачей в 7d18c29. Собственные изменения workflow/handoff идут отдельным commit в fix/review-p1-integration, без force push и переписывания main.
+
+Private repo: https://github.com/fullfels/innoglobalhack-compact-fact-extraction . GitHub account fullfels/admin подтверждён коннектором и CLI. Collaborators API повторно подтвердил QFa1/write (первоначально invitation ожидал принятия, принят во время настройки). DE username неизвестен; новое приглашение не отправлялось. Не дублировать существующие репозиторий, labels, Issues, Projects или invitations.
+
+CODEOWNERS/CONTRIBUTING/PR template существуют; уточнены canonical src/ml и src/normalizers и ownership. Shared schema требует FS + затрагиваемого DE/ML review по командному правилу. CI сохраняет имя check contracts-and-docker; добавлены contents:read, concurrency cancel-in-progress и job timeout 15 минут. Секреты для CI не нужны.
+
+Branch protection недоступна: GET protection возвращает GitHub HTTP 403 с требованием Pro для private repo. Тариф и visibility не менялись. Целевой JSON .github/branch-protection.json подготовлен (один approving review, CODEOWNERS, required check, resolved conversations, запрет force push/delete). Это конфигурация для будущего применения admin, а не действующая защита. До этого merges только через peer-reviewed PR с зелёным CI по командной договорённости.
+
+До отправки проверены состав текущей истории и staged paths; в tracked файлах нет exact copies десяти оригинальных organizer files (проверка SHA256), raw dataset/PDF/checkpoints/.env не добавлены. Pattern scan известных token/private-key форматов и лимит 5MB не нашли совпадений; проверка ограниченная, не абсолютная гарантия. Подтверждённых прав на распространение оригиналов нет — они остаются вне Git даже в private repo. Собственные схемы, код и независимые mock examples сохраняются.
+
+Локально повторно выполнены 66 tests (PASS; один upstream deprecation warning), Docker build (cache), отдельный startup на 18084, HTTP smoke PASS, docker compose config PASS. Начальный remote run 43505148492 на 65e4ee9 — success. Итоговый PR run нового commit проверяется отдельно, его локальный pytest не заменяет. Локальный YAML parser отсутствует; фактический GitHub Actions run является итоговой проверкой workflow.
+
+Точный handoff: INTEGRATION_HANDOFF.md. ML нужны checkpoint/tokenizer, bridge/loader, dependencies, manifest, context/window/stop policy и offline reload. DE нужны ordered normalizers, catalog hash/ambiguity policy и fixtures. Benchmark collector и JSONL runner ещё не реализованы; их точки подключения и blockers перечислены в handoff, фиктивные реализации не создавались. Full-stack следующий этап: принять контракты → подключить реальные артефакты → real HTTP E2E → collector/runner → real CPU/GPU Docker и воспроизводимая оценка.
