@@ -86,3 +86,28 @@ def test_actual_official_evaluator(bundle,tmp_path):
     result=evaluate(gold_path=g,predictions=p,evaluator=os.environ['OFFICIAL_EVALUATOR'],out=tmp_path/'official',model_id='fixture',experiment_id='official-format-test',mode='synthetic')
     assert result['n_calls']==1
     assert all(result[k]==1 for k in ['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'])
+
+@pytest.mark.parametrize('fail',[False,True])
+def test_factory_load_once_and_release_without_gold(bundle,tmp_path,monkeypatch,fail):
+    from types import SimpleNamespace
+    g,_,_=bundle;events=[]
+    class Resource:
+        descriptor=SimpleNamespace(model_id='loaded-fixture',mode='synthetic')
+        state='unloaded'
+        def load(self):events.append('load');self.state='ready'
+        def close(self):events.append('close');self.state='unloaded'
+    adapter=Resource()
+    class Target:
+        extractor=adapter
+        def run(self,call):
+            assert adapter.state=='ready' and 'facts' not in call.model_dump()
+            if fail:raise RuntimeError('controlled failure')
+            return Pipeline(MockExtractor()).run(call)
+    monkeypatch.setattr('src.experiments.evaluate.factory',lambda spec:lambda config:Target())
+    script=tmp_path/'protocol_spy.py'
+    script.write_text("import json,sys\njson.dump(dict.fromkeys(['fact_precision','fact_recall','temporal_recall','state_accuracy','grounding_turn','grounding_span'],1),open(sys.argv[4],'w'))\n")
+    kwargs=dict(gold_path=g,predictions=None,evaluator=script,out=tmp_path/'factory',model_id='loaded-fixture',experiment_id='factory',pipeline_factory='fixture:factory')
+    if fail:
+        with pytest.raises(RuntimeError):evaluate(**kwargs)
+    else:evaluate(**kwargs)
+    assert events==['load','close'] and adapter.state=='unloaded'
