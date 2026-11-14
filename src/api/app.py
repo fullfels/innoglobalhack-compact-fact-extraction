@@ -134,7 +134,7 @@ def create_app(settings: Settings | None = None, pipeline: Pipeline | None = Non
             raise PipelineError('INFERENCE_FAILED', 503, 'pipeline', type(exc).__name__) from None
         elapsed = (perf_counter() - started) * 1000
         logger.info(json.dumps({'request_id': request.state.request_id, 'call_hash': hashlib.sha256(call.call_id.encode()).hexdigest()[:16], 'model_id': descriptor.model_id, 'facts': len(prediction.facts), 'elapsed_ms': elapsed}))
-        return ExtractResponse(prediction=prediction, meta=Meta(request_id=request.state.request_id, model_id=descriptor.model_id, mode=descriptor.mode, elapsed_ms=elapsed, warnings=warnings, is_mock=descriptor.mode == 'mock'))
+        return ExtractResponse(prediction=prediction, meta=Meta(request_id=request.state.request_id, model_id=descriptor.model_id, manifest_id=getattr(pipeline.extractor,'public_info',{}).get('manifest_id'), mode=descriptor.mode, elapsed_ms=elapsed, warnings=warnings, is_mock=descriptor.mode == 'mock'))
 
     app.mount('/static', StaticFiles(directory=ROOT / 'frontend'), name='static')
 

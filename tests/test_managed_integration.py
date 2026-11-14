@@ -31,6 +31,18 @@ def test_loader_once_and_release_after_serving():
     assert len(loaded)==len(closed)==1 and a.state=='unloaded'
 
 
+def test_extract_preserves_public_artifact_manifest_identity():
+    a=ManagedAdapter(ModelResources('fixture',None),
+        lambda r:LoadedModel(lambda c,r:MockExtractor().extract(c)),
+        descriptor=ModelDescriptor('manifest-contract-fixture','real','controlled-test'),
+        manifest_id='export-fixture-v1')
+    with TestClient(create_app(Settings(mode='real'),Pipeline(a))) as client:
+        info=client.get('/model/info').json()
+        response=client.post('/extract',json=CALL)
+        assert response.status_code==200
+        assert response.json()['meta']['manifest_id']==info['manifest_id']=='export-fixture-v1'
+
+
 def test_concurrent_load_is_single_initialization():
     loaded=[]
     a=adapter(lambda r:(loaded.append(1) or LoadedModel(lambda c,r:MockExtractor().extract(c))))
