@@ -37,6 +37,8 @@ Docker smoke: `python scripts/smoke.py http://127.0.0.1:8000`. После про
 
 Единый проверочный snapshot и запуск после передачи ML-артефактов: [первый real inference, 10/383 calls и A/B/C](docs/FIRST_REAL_INFERENCE.md). Для real API используется `python -m scripts.real_smoke --help`; обычный `scripts/smoke.py` проверяет только mock. Текущий статус PR/review и повторных проверок: [INTEGRATION_STATUS.md](docs/INTEGRATION_STATUS.md).
 
+Отдельный [Qwen Docker/runtime profile](docs/REAL_RUNTIME_PROFILE.md) требует утверждённый engine image и read-only export/cache. Он проверен на offline/negative сценариях; настоящий model reload и GPU deployment пока BLOCKED.
+
 
 ## Командный репозиторий
 
