@@ -29,9 +29,9 @@ def validate_output(call: CallInput, facts) -> CallPrediction:
 
 
 class Pipeline:
-    def __init__(self, extractor: Extractor, normalizers: Tuple[Normalizer, ...] | None = None):
+    def __init__(self, extractor: Extractor, normalizers: Tuple[Normalizer, ...] = ()):
         self.extractor = extractor
-        self.normalizers = build_default_normalizers() if normalizers is None else normalizers
+        self.normalizers = normalizers
 
     def run(self, call: CallInput) -> Tuple[CallPrediction, Tuple[str, ...]]:
         def stage(module, fn):

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
-from sklearn.model_selection import GroupShuffleSplit
+import random
 
 from src.contracts.models import CallInput, Fact
 
@@ -209,11 +209,15 @@ def prepare_train_ready_v1(
 
     # Leakage-free split строго по account_id / series
     groups = [r["qa_meta"]["account_id"] for r in cleaned_records]
-    gss = GroupShuffleSplit(n_splits=1, test_size=dev_size, random_state=random_seed)
-    train_idx, dev_idx = next(gss.split(cleaned_records, groups=groups))
+    # Leakage-free split строго по account_id / series (без внешних зависимостей)
+    unique_accounts = sorted({r["qa_meta"]["account_id"] for r in cleaned_records})
+    rng = random.Random(random_seed)
+    rng.shuffle(unique_accounts)
+    n_dev_accounts = max(1, int(round(len(unique_accounts) * dev_size)))
+    dev_account_set = set(unique_accounts[:n_dev_accounts])
 
-    train_data = [cleaned_records[i] for i in train_idx]
-    dev_data = [cleaned_records[i] for i in dev_idx]
+    train_data = [r for r in cleaned_records if r["qa_meta"]["account_id"] not in dev_account_set]
+    dev_data = [r for r in cleaned_records if r["qa_meta"]["account_id"] in dev_account_set]
 
     train_accounts = {r["qa_meta"]["account_id"] for r in train_data}
     dev_accounts = {r["qa_meta"]["account_id"] for r in dev_data}

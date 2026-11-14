@@ -9,6 +9,7 @@ from src.pipeline.normalizers import (
     PolarityNormalizer,
     StateNormalizer,
     TemporalNormalizer,
+    build_default_normalizers
 )
 from src.pipeline.service import Pipeline
 
@@ -217,7 +218,7 @@ def test_full_pipeline_e2e_filtering_and_validation():
                 )
             )
 
-    prediction, warnings = Pipeline(StubExtractor()).run(call)
+    prediction, warnings = Pipeline(StubExtractor(), normalizers=build_default_normalizers()).run(call)
     assert len(prediction.facts) == 2
     assert prediction.facts[0].object.name == "роутер"
     assert prediction.facts[0].polarity == 1
