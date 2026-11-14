@@ -1,6 +1,6 @@
 """Run-state regression tests only; no Torch import or simulated quality scores."""
 import json
-from ml.qwen.train import record_failure, diagnostic_subset, token_loss_weights, validate_lora_targets
+from ml.qwen.train import record_failure, diagnostic_subset, token_loss_weights, validate_lora_targets, checkpoint_quality_key
 import pytest
 
 
@@ -25,6 +25,14 @@ def test_minimized_peft_target_suffixes_cannot_accidentally_include_vision():
     validate_lora_targets(expected + ['model.visual.qkv'], expected, ['q_proj'])
     with pytest.raises(ValueError, match='exactly'):
         validate_lora_targets(expected + ['model.visual.q_proj'], expected, ['q_proj'])
+
+
+def test_empty_checkpoint_with_lower_ce_cannot_beat_fact_extraction():
+    empty = {"metrics": {"fact_precision": 0., "fact_recall": 0., "state_accuracy": 0.,
+                         "temporal_recall": None, "grounding_turn": None}, "failed_generations": 0}
+    useful = {"metrics": {"fact_precision": .7, "fact_recall": .5, "state_accuracy": .4,
+                          "temporal_recall": .6, "grounding_turn": .7}, "failed_generations": 1}
+    assert checkpoint_quality_key(useful, .3) > checkpoint_quality_key(empty, .01)
 
 
 def test_paired_diagnostic_subset_uses_stable_prefix_without_label_selection():

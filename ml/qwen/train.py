@@ -63,6 +63,16 @@ def validate_lora_targets(available, expected, selectors):
         raise ValueError("Adapter targets do not resolve to exactly the expected language layers")
 
 
+def checkpoint_quality_key(report, dev_loss):
+    """Generation quality ranks first; teacher-forced CE only breaks exact ties."""
+    m = report["metrics"]
+    precision, recall = m["fact_precision"], m["fact_recall"]
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.
+    def known(name): return m.get(name) if m.get(name) is not None else -1.
+    return (f1, recall, known("state_accuracy"), known("temporal_recall"),
+            known("grounding_turn"), -report["failed_generations"], -dev_loss)
+
+
 def record_failure(out, phase, error_type, own_run):
     out = Path(out)
     if out.exists() and not own_run:
@@ -286,6 +296,7 @@ def main():
               "dtype": args.precision, "quantization": None, "rank": 16, "alpha": 32, "dropout": 0.,
               "grad_scaler_enabled": args.precision == "float16",
               "loss_normalization": "supervised_tokens_across_accumulation_window",
+              "checkpoint_selection": "fixed_inner_dev_decoded_fact_f1_then_recall_state_time_grounding; CE tie-break only",
               "dev_loss_normalization": "all_supervised_dev_tokens",
               "min_timing_steps": args.min_timing_steps,
               "diagnostic_every": args.diagnostic_every,
@@ -351,7 +362,8 @@ def main():
     steps = args.steps if args.phase == "pilot" else math.ceil(len(train_rows) / accumulation)
     initial_dev = teacher_loss(model, dev_rows)
     print("stage optimizer_training", "steps", steps, "initial_dev_loss", initial_dev, flush=True)
-    best_loss, best_step = initial_dev, None
+    best_loss, best_step, best_key, best_selection = initial_dev, None, None, None
+    selection_calls = dev_raw if args.phase == "pilot" else dev_raw[:10]
     order = list(range(len(train_rows))); random.Random(seed).shuffle(order)
     position = 0; logs = []
     torch.cuda.reset_peak_memory_stats(); total_start = time.perf_counter()
@@ -396,8 +408,13 @@ def main():
         if (step + 1) % (16 if args.phase == "pilot" else max(1, steps // 2)) == 0 or step + 1 == steps:
             current = teacher_loss(model, dev_rows)
             log["dev_loss"] = current
-            if current < best_loss:
-                best_loss, best_step = current, step + 1
+            best_loss = min(best_loss, current)
+            selection = quality_run(model, tokenizer, selection_calls, data_root,
+                                    args.out / f"selection_step_{step+1}")
+            log["decoded_selection_metrics"] = selection["metrics"]
+            key = checkpoint_quality_key(selection, current)
+            if best_key is None or key > best_key:
+                best_key, best_step, best_selection = key, step + 1, selection
                 checkpoint(model, tokenizer, args.out / "best", data_root, step + 1, train_rows[0])
             save(args.out / "training_log.json", logs)
     elapsed_training = time.perf_counter() - total_start
@@ -442,7 +459,8 @@ def main():
     after_diagnostic_dev = quality_run(model, tokenizer, diagnostic_dev, data_root, args.out / "after_dev_same_diagnostic")
     gates = {"loss_equivalence": equivalence["passed"], "reload": reload_result["passed"],
              "requested_timing_steps_measured": len(timing) >= args.min_timing_steps,
-             "dev_loss_improved": best_step is not None,
+             "dev_loss_improved": best_loss < initial_dev,
+             "decoded_dev_fact_recall_positive": best_selection["metrics"]["fact_recall"] > 0.,
              "paired_diagnostic_train_recall_improved": after_diagnostic_train["metrics"]["fact_recall"] > before_train["metrics"]["fact_recall"],
              "train_fact_recall_at_least_half": after_train["metrics"]["fact_recall"] >= .5,
              "multiple_facts_generated": after_train["valid_multifact_calls"] > 0,
@@ -456,6 +474,8 @@ def main():
               "training_elapsed_sec_including_dev_checks": elapsed_training, "timing_steps": len(timing),
               "requested_min_timing_steps": args.min_timing_steps,
               "initialization": config["initialization"], "loss_normalization": config["loss_normalization"],
+              "checkpoint_selection": config["checkpoint_selection"],
+              "selected_inner_dev_generation": best_selection,
               "seconds_per_microbatch_median": per_micro, "eta_main_one_epoch_sec": eta,
               "eta_note": "Measured up to last50 actual steps (count reported); one full epoch plus20% margin, estimate not guarantee.",
               "long_call_probe": long_probe, "before_train": before_train, "after_train": after_train,
