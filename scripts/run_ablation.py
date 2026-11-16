@@ -52,6 +52,7 @@ class ReplayExtractor:
         raw_call = self.preds_by_id.get(call.call_id, {})
         cands = []
         max_turn = len(call.turns) - 1 if call.turns else 0
+        client_idxs = [t.idx for t in call.turns if t.speaker == 'client']
         for rf in raw_call.get('facts', []):
             if not isinstance(rf, dict):
                 continue
@@ -97,7 +98,14 @@ class ReplayExtractor:
                 conf = 'unconfirmed'
             else:
                 conf = 'unknown'
-            ev = (t_idx,) if (call.turns and 0 <= t_idx < len(call.turns)) else ()
+
+            if call.turns and 0 <= t_idx < len(call.turns) and call.turns[t_idx].speaker == 'client':
+                ev = (t_idx,)
+            else:
+                after = [i for i in client_idxs if i > t_idx]
+                before = [i for i in client_idxs if i < t_idx]
+                ev = (after[0],) if after else ((before[-1],) if before else ())
+
             cands.append(CandidateFact(fact=fact, confirmation=conf, evidence_turns=ev))
         return CandidateBatch(candidates=tuple(cands))
 
