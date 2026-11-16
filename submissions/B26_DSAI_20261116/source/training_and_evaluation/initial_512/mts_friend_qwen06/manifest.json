@@ -1,0 +1,75 @@
+{
+  "package": "mts_friend_qwen06",
+  "version": 1,
+  "model": "Qwen/Qwen3-0.6B",
+  "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+  "parent_manifest_sha256": "a72e2ac7e0ca9f415a65a189991047ad921887f900415afd7dec7f85159f3123",
+  "fs_contract_snapshot": "640dc29e6fc49869110fd291e3d445210d9d0aeb",
+  "counts": {
+    "train_512": {
+      "calls": 512,
+      "facts": 2460,
+      "attributes": {
+        "ticket_status": 468,
+        "service_state": 580,
+        "action": 517,
+        "tariff": 244,
+        "agreement": 651
+      },
+      "empty_calls": 12,
+      "negative_calls": 29
+    },
+    "dev_20": {
+      "calls": 20,
+      "facts": 103,
+      "attributes": {
+        "ticket_status": 20,
+        "agreement": 28,
+        "service_state": 28,
+        "action": 21,
+        "tariff": 6
+      },
+      "empty_calls": 1,
+      "negative_calls": 1
+    }
+  },
+  "data_policy": "Cleaned official MTS v2 subset; no new labels, no new cleaning, no original val or quarantine.",
+  "sha256": {
+    "data/dev_20.jsonl": "1c22090990933a4b33fdc3864a370e2dc0608f8a74fcae09f2b903011eaa11d3",
+    "data/train_512.jsonl": "2c469377e596d737a5f4b3bd2eba75963f9764e2c5ad14c2e40490d0d4908f7a",
+    "evaluation/baseline_metrics.json": "cc6858b774f4fbd37e1e8fa4b7430af53cc6465e504dee8c0a80a1e71cb456b4",
+    "evaluation/case_metrics.py": "dffec9b8b20c5a8a101a33a27b1672f2b6195f00ab60f021a1c14b31eeeacabd",
+    "experiment_defaults.json": "a7206fc76b78c85666933ca3b52a9180faa305fe6601375bff9586c0bbdfc31b",
+    "ml/__init__.py": "fc6c9541089908daad7c05db278a769d894b07816e6c72106473d0e80fa6a047",
+    "ml/qwen/__init__.py": "f63a90fadc26bca4ad97bceaa09a61b2f686d4357fa4fe92a6fa34425e9a23ef",
+    "ml/qwen/analyze_results.py": "1b11a4e325fd14f6df8078e58c67446f9dcf764502d2089a555e281774f78e98",
+    "ml/qwen/bridge.py": "e0908f911ee1cc086e783ac7a8b182ae33b43e9f07c1dafa5a57d067798d0ed0",
+    "ml/qwen/friend_qwen06.py": "0d1c75d3c6184a99062c1a1b687e07be91988491e8d0c3ef6dcc60f244bb131d",
+    "ml/qwen/prompting.py": "daab4bc5c127102311e4a01b7f24267985bfe8c6a81a9f58483ab368228dba6b",
+    "ml/qwen/runtime.py": "e0ee59fcc1c4a86cdd9c1e78643176a9307fd77b7b016af67b3605a33de8d449",
+    "ml/qwen/train.py": "e57a5ee29bfa78d7f099ba8093ce51c7de8c61eb27ffa857ece0faf59bcab0c8",
+    "official_catalog.json": "b7579c704e03e76e174e54bf7e7099171bc62301a2cfd8f5b3c7838b552701cb",
+    "official_README.md": "89e62da2d9762cb6449ad37a3d806c862f2d7df80d008cbc02775273f4366509",
+    "official_schema.md": "8435f897c4d848a696c2bc5aecf061914d251296ffb2e0312f2d2d907436484b",
+    "prompt.txt": "1c9842b036ce0dbad4ecbacc36b042f33b9da14f8e7ba6fae2bca018dd879940",
+    "QUALITY_REPORT.md": "852a9b84c6e89c9cdceab0591fd2575234eb2d5a96d45f1fbd9b57b70786f294",
+    "requirements.txt": "7509c5b1cfc9c6d08fffb073afc8d2cc2cc7aefb7071a91a3a85d08d82d01101",
+    "selection.json": "b1aba32cb434a21dc16f0b3a02a0fd228fd8f90716cc087fd549b2a790966bd3",
+    "sft/dev_20.jsonl": "f8bf4b796aeb382fb8845f9be82a22f7ca4007c5cb2c080728b43d7a12e034d0",
+    "sft/train_512.jsonl": "9c5742c2a2d43a7a6507d985511b2e6a15e03df765eec4ec7c83e086bd7756f8",
+    "src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/contracts/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/contracts/models.py": "f5d73bc4af9bb302015fae5dcec06fb8150c613acae887e1e074ddf9890a5b01",
+    "src/pipeline/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/pipeline/adapters.py": "d66e9e2149532dab182fc408d51fe41845f4afa12f0d3b32f37df4fb35672107",
+    "src/pipeline/lifecycle.py": "0f11610ecb772ecbb6e118d7417c6908800cc6f38a40735cc259bf4e01c8ed60",
+    "src/pipeline/service.py": "5d7da9b1994c9bcc47c0c77d3d8e837fde908bf85f181321af08b0b7c38cb7ca",
+    "tokenize_sft.py": "20aaa979a764eed59f7246b1b8b9505452bdd6b6494495e00e0324284367c532",
+    "tokenizer/config.json": "660db3b73d788119c04535e48cf9be5f55bc3100841a718637ae695b442f27dd",
+    "tokenizer/download_manifest.json": "86aa5428fd497d840047d83a6227947f45e9e1c9e19c9d98538b69f086386733",
+    "tokenizer/generation_config.json": "2325da0f15bb848e018c5ae071b7943332e9f871d6b60e2ed22ca97d4cb993d2",
+    "tokenizer/tokenizer.json": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "tokenizer/tokenizer_config.json": "d5d09f07b48c3086c508b30d1c9114bd1189145b74e982a265350c923acd8101",
+    "verify_friend.py": "2f4e5642393cf52662876917ccfcc5d1b50ef715af2fbd3eb1c7bfd64ffda002"
+  }
+}

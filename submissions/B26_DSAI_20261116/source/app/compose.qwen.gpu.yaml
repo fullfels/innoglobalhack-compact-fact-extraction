@@ -1,0 +1,6 @@
+# Optional only after ML validates the supplied CUDA engine image/hardware.
+services:
+  qwen:
+    gpus: all
+    environment:
+      MTS_MODEL_DEVICE: cuda

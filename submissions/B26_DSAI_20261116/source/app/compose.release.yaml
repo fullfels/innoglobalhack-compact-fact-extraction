@@ -1,0 +1,42 @@
+services:
+  extractor:
+    image: compactfact-qwen3-v23:catalog-v1
+    build:
+      context: .
+      dockerfile: Dockerfile.release
+      args:
+        TORCH_VERSION: ${MWS_TORCH_VERSION:?Set a verified available Torch distribution version}
+        TORCH_INDEX_URL: ${MWS_TORCH_INDEX_URL:-https://download.pytorch.org/whl/cpu}
+    ports:
+      - "127.0.0.1:${MWS_PORT:-8000}:8000"
+    environment:
+      MWS_MODE: real
+      MWS_PIPELINE_FACTORY: ml.qwen.serving:factory
+      MTS_MODEL_DIR: /models/export
+      MTS_MODEL_BASE_PATH: /models/base
+      MTS_MODEL_DEVICE: ${MTS_MODEL_DEVICE:-cpu}
+      MWS_MODEL_MAX_CALL_SECONDS: ${MWS_MODEL_MAX_CALL_SECONDS:-600}
+      MWS_MODEL_ID: ${MWS_MODEL_ID:?Set the actual export model_id}
+      MWS_ARTIFACT_SHA256: ${MWS_ARTIFACT_SHA256:?Set the actual model_manifest.json SHA256}
+      MWS_TORCH_VERSION: ${MWS_TORCH_VERSION:?Set the exact Torch release used to build the image}
+      HF_HUB_OFFLINE: "1"
+      HF_HOME: /tmp/hf-cache
+    volumes:
+      - type: bind
+        source: ${MWS_EXPORT_DIR:?Set the selected export directory}
+        target: /models/export
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MWS_BASE_DIR:?Set the materialized pinned base directory}
+        target: /models/base
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,size=256m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 11m

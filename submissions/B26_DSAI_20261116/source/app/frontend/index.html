@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width">
+  <title>Факты из диалога · CompactFactExtraction</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body><main>
+  <header><p>MWS · INNOPOLIS GLOBAL HACK 2026</p><h1>Факты из диалога</h1>
+    <p class="intro">Загрузите разговор поддержки. Проверьте факты, время и реплики, на которых основан результат.</p>
+    <b id="status">Проверяем подключение…</b>
+  </header>
+  <aside id="model-banner" aria-live="polite">Проверяем режим модели…</aside>
+  <section aria-labelledby="input-heading">
+    <h2 id="input-heading">Разговор</h2>
+    <div class="input-tools"><label>Пример <select id="example"><option value="0">Проблема и заявка</option><option value="1">Явное отрицание</option></select></label>
+      <label class="file-label">Загрузить JSON звонка <input id="upload-call" type="file" accept=".json,.jsonl,application/json"></label>
+    </div>
+    <div class="metadata"><label>Дата и время звонка<input id="call-date" type="text" placeholder="2026-11-15T12:00:00" autocomplete="off"></label>
+      <label>Идентификатор звонка<input id="call-id" type="text" autocomplete="off"></label></div>
+    <label for="conversation">Реплики клиента и оператора</label>
+    <p class="hint">Начинайте реплики с «Клиент:» или «Оператор:». Сохраните исходные слова, даже если речь распознана с ошибками. Дата звонка нужна для выражений вроде «вчера».</p>
+    <textarea id="conversation" rows="9" spellcheck="false" placeholder="Клиент: Со вчера интернет не работает.&#10;Оператор: Что уже пробовали?"></textarea>
+    <details><summary>Входной JSON и исходные индексы реплик</summary>
+      <p class="hint">Можно передать исходный формат напрямую. Эталонные факты модели не нужны.</p>
+      <textarea id="input" rows="12" spellcheck="false" aria-label="Входной JSON"></textarea>
+    </details>
+    <button id="run" type="button">Извлечь факты</button><p id="message" role="status" aria-live="polite"></p>
+  </section>
+  <section aria-labelledby="facts-heading"><h2 id="facts-heading">Извлечённые факты</h2>
+    <p class="hint">Нажмите на строку факта, чтобы увидеть исходную реплику. Пустой результат и ошибка обработки — разные ситуации.</p>
+    <div class="scroll"><table><thead><tr><th>Объект</th><th>Атрибут</th><th>Значение</th><th>Полярность / роль</th><th>Время</th><th>Источник</th></tr></thead><tbody id="facts"></tbody></table></div>
+    <h3>Исходные реплики</h3><div id="turns"></div>
+    <h3>Временные интервалы</h3><div id="timeline"></div>
+    <details><summary>JSON ответа</summary><pre id="json"></pre><button id="download-output" type="button">Скачать результат JSON</button></details>
+  </section>
+  <footer>Обработка готового транскрипта. Интерфейс показывает фактический режим модели; демонстрационный режим помечен отдельно.</footer>
+</main><script src="/static/app.js"></script><script src="/static/simple.js"></script></body>
+</html>

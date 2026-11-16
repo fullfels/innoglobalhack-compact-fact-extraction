@@ -1,0 +1,41 @@
+# Separate profile: never changes the default mock Compose service.
+services:
+  qwen:
+    image: compactfact-qwen:local
+    build:
+      context: .
+      dockerfile: Dockerfile.qwen
+      args:
+        MWS_ENGINE_IMAGE: ${MWS_ENGINE_IMAGE:?Provide a reviewed engine image pinned by digest}
+    ports:
+      - "127.0.0.1:${MWS_QWEN_PORT:-8001}:8000"
+    environment:
+      MWS_MODE: real
+      MWS_PIPELINE_FACTORY: ml.qwen.runtime:factory
+      MTS_MODEL_DIR: /models/export
+      MTS_MODEL_DEVICE: ${MTS_MODEL_DEVICE:-cpu}
+      MWS_MODEL_ID: ${MWS_MODEL_ID:?Provide the actual model ID}
+      MWS_ARTIFACT_SHA256: ${MWS_ARTIFACT_SHA256:?Provide approved model_manifest.json SHA256}
+      MWS_TORCH_VERSION: ${MWS_TORCH_VERSION:?Provide exact approved Torch distribution version}
+      MWS_INFERENCE_TIMEOUT_SEC: ${MWS_INFERENCE_TIMEOUT_SEC:-120}
+      HF_HOME: /hf-cache
+      HF_HUB_OFFLINE: "1"
+    volumes:
+      - type: bind
+        source: ${MWS_MODEL_DIR:?Provide the verified export directory}
+        target: /models/export
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${MWS_HF_CACHE_DIR:?Provide a dedicated offline HF cache without credentials}
+        target: /hf-cache
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=256m
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    stop_grace_period: 2m

@@ -1,0 +1,11 @@
+{
+  "payload": "mts_qwen06_official383.zip",
+  "bytes": 40331073,
+  "sha256": "2a33c38a1958b40f2f1c21da49123ac7ff39f6056dc96b5f16999808d7e28c99",
+  "files": 77,
+  "contains_saved_adapter": true,
+  "contains_training_data": false,
+  "official_validation_calls": 383,
+  "official_gold_facts": 1845,
+  "gpu_run_not_executed_locally": true
+}

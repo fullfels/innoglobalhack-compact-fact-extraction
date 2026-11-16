@@ -1,0 +1,20 @@
+# Only verified accounts with current repository access may be active owners.
+# QFa1: invitation accepted; write access verified via GitHub API.
+# Eduard-Sadykov: existing write access verified via GitHub API.
+* @fullfels
+/src/contracts/ @fullfels @QFa1 @Eduard-Sadykov
+/src/pipeline/ @fullfels
+/src/api/ @fullfels
+/frontend/ @fullfels
+/.github/ @fullfels
+/docs/ @fullfels
+
+/ml/ @QFa1
+/src/pipeline/adapters.py @fullfels @QFa1
+
+/src/ml/ @QFa1
+/configs/train/ @QFa1
+/src/data/ @Eduard-Sadykov
+/src/normalizers/ @Eduard-Sadykov
+/data/ @Eduard-Sadykov
+/scripts/data/ @Eduard-Sadykov

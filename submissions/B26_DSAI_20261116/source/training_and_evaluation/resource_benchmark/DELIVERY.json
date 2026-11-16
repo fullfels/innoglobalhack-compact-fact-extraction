@@ -1,0 +1,15 @@
+{
+  "zip": "mts_qwen06_resources.zip",
+  "bytes": 39666451,
+  "sha256": "194a67c42afee618ba413c490e67844be7cc88f80a9c5176c5de3dbd21e6d8ad",
+  "resource_calls": 4,
+  "gold_facts": 17,
+  "repeats": 1,
+  "gold_restored_to_official": [
+    "u101_02343:call0000"
+  ],
+  "new_gpu_runs_started": 0,
+  "new_cpu_runs_started": 0,
+  "plot_quality": "Fact F1; temporal/state/n_denominators also exported",
+  "native_quantization_not_verified": true
+}

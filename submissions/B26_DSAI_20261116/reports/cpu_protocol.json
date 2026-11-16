@@ -1,0 +1,66 @@
+{
+  "device": "cpu",
+  "modes": [
+    "fp16"
+  ],
+  "base": "Qwen/Qwen3-0.6B",
+  "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+  "model_id": "qwen06-temporal-v23-parent500-plus0",
+  "adapter_sha256": "577bc8184877de05386244791bee2ecaeb5dd894e86df749cd31ed270dbab98b",
+  "postprocessing": "tariff-catalog-v1",
+  "postprocessing_sha256": "5ede4740c42134d42fc2c37f81d8e0a78337daa6ed0750dde99676c62404673b",
+  "package_sha256": "62058fe2b6be384d6ff8b64c0a1153776ef0f85f71aed12deb97718e686613c8",
+  "call_ids": [
+    "u104_00550:call0001",
+    "u101_02343:call0000",
+    "u101_00077:call0000",
+    "u101_00789:call0000"
+  ],
+  "input_sha256": "3423ff978d2f1f4f7c9da2fbb35ca2614f63b145298b2c17a5e409b81ff3f29f",
+  "batch_size": 1,
+  "do_sample": false,
+  "thinking": false,
+  "use_cache": true,
+  "max_new_tokens": 2048,
+  "seed": 42,
+  "repeats": 1,
+  "warmup": "Two generated tokens on a short fixed phrase; not a long thermal warmup",
+  "per_call_seconds": 600,
+  "timing": "Synchronized completed pipeline wall time including tokenization/postprocessing; excludes load, warmup and file IO",
+  "rss": "Current model process RSS sampled every20ms, not full OS/process-tree memory",
+  "gpu_memory": "PyTorch allocated/reserved peak, including resident model, excludes some driver/context allocations",
+  "checkpoint_disk_note": "Base+adapter files remain unquantized on disk; INT8/INT4 quantization occurs at load",
+  "scope": "Small preselected internal diagnostic subset, not representative383 or hidden test",
+  "hardware": {
+    "os": "Linux-6.18.58.1-microsoft-standard-WSL2-x86_64-with-glibc2.36",
+    "machine": "x86_64",
+    "cpu": "x86_64",
+    "physical_ram_bytes": 8173395968,
+    "logical_cores": 12,
+    "python": "3.12.8",
+    "libraries": {
+      "fastapi": "0.115.6",
+      "pydantic": "2.10.4",
+      "torch": "2.14.1+cpu",
+      "transformers": "5.3.0",
+      "psutil": "7.2.2"
+    },
+    "device": "cpu",
+    "rss_method": "current process RSS sampled every 20ms; includes loader/warmup; not process tree or lifetime high-water",
+    "disk_cache": "uncontrolled; cold means new target instance, not cold OS disk cache",
+    "torch_num_threads": 6,
+    "torch_num_interop_threads": 6,
+    "cpu_model": "13th Gen Intel(R) Core(TM) i7-1355U",
+    "cgroup_cpu.max": "600000 100000",
+    "cgroup_memory.max": "7516192768"
+  },
+  "versions": {
+    "torch": "2.14.1+cpu",
+    "transformers": "5.3.0",
+    "peft": "0.18.1",
+    "tokenizers": "0.22.2",
+    "accelerate": "1.12.0",
+    "safetensors": "0.8.0",
+    "pydantic": "2.10.4"
+  }
+}

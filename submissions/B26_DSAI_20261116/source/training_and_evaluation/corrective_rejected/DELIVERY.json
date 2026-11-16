@@ -1,0 +1,37 @@
+{
+  "notebook": {
+    "name": "MTS_11_Qwen06_Temporal_SFT.ipynb",
+    "bytes": 15722,
+    "sha256": "f48bd1160dd67746ce08fe4ce200a852603da56ec15995301a61cd3e56c23a7a"
+  },
+  "payloads": {
+    "mts_qwen06_temporal_v23_full.zip": {
+      "sha256": "b24bbf27ae97887c60297fff6a45737cb5ccb6892fa383f6bd5e9f2823bbede5",
+      "bytes": 44253910
+    },
+    "mts_qwen06_temporal_v23_light.zip": {
+      "sha256": "7e81b2a4c266ca60aaedb9abd434bd9c38ae3605eb0c33777c988cb4a0d6d858",
+      "bytes": 4711852
+    }
+  },
+  "local_checks": {
+    "cpu_tests_passed": 39,
+    "cpu_test_failures": 0,
+    "training_rows": 1024,
+    "real_rows_unchanged_verified": 768,
+    "synthetic_rows": 256,
+    "max_tokens_local_audit": 14080,
+    "native_gpu_training_done": false,
+    "native_weighted_loss_equivalence_done": false,
+    "native_adapter_reload_done": false,
+    "new_model_quality_measured": false,
+    "official_val383_done": false,
+    "local_tokenizer_compatibility_override": true,
+    "parent_tensor_header_verified": {
+      "tensor_count": 392,
+      "parameters": 10092544,
+      "dtype": "F32"
+    },
+    "scope": "Preparation and CPU/data verification only; actual training and performance are produced by Colab."
+  }
+}
