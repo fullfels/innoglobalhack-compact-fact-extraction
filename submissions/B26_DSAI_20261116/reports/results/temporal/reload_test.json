@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "fresh_base_and_adapter": true,
+  "max_logit_difference": 0.0,
+  "adapter_sha256": "577bc8184877de05386244791bee2ecaeb5dd894e86df749cd31ed270dbab98b"
+}

@@ -1,0 +1,26 @@
+{
+  "model_id": "qwen06-temporal-v23-parent500-plus0",
+  "model_manifest_sha256": "a1cb70e22b80b31096539c86265278bfce5ab1aa83477030cf83216825554385",
+  "package_manifest_sha256": "c4889c80d97acb2394137634994025101c7c98256a8076e88d3072823407570e",
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "adapter_sha256": "577bc8184877de05386244791bee2ecaeb5dd894e86df749cd31ed270dbab98b",
+  "seed": 42,
+  "precision": "fp16",
+  "batch_size": 1,
+  "calendar_enabled": false,
+  "thinking": false,
+  "max_new_tokens": 2048,
+  "max_call_seconds": 120,
+  "context": 24576,
+  "use_cache": true,
+  "training_performed": false,
+  "versions": {
+    "torch": "2.14.1+cu130",
+    "transformers": "5.3.0",
+    "peft": "0.18.1",
+    "tokenizers": "0.22.2",
+    "accelerate": "1.12.0",
+    "safetensors": "0.8.0",
+    "pydantic": "2.10.4"
+  }
+}

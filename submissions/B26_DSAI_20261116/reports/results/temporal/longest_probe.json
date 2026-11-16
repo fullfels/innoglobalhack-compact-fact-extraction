@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "optimizer_step": false,
+  "tokens": 14080,
+  "peak_cuda_allocated_bytes": 3796187648
+}

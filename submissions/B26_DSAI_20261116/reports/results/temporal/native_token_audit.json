@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "native_tokenizer": true,
+  "rows": 1024,
+  "min_tokens": 4139,
+  "max_tokens": 14080,
+  "masked_timestamp_tokens": 87373,
+  "weighted_timestamp_tokens": 29534,
+  "prompt_loss_masked": true,
+  "no_truncation": true
+}

@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "hf_loss_equivalence": true,
+  "full_logits_weighted_reference_equivalence": true,
+  "masked_tokens": 28,
+  "weighted_tokens": 10
+}
