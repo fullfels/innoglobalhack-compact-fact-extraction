@@ -1,0 +1,136 @@
+{
+  "source": "unchanged archived smoke records, no new generation",
+  "calls": [
+    {
+      "call_id": "u2027_00005:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 5,
+      "input_tokens": 4338,
+      "output_tokens": 114,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00006:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 5,
+      "input_tokens": 4351,
+      "output_tokens": 83,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00008:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 6,
+      "input_tokens": 4339,
+      "output_tokens": 87,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00009:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 5,
+      "input_tokens": 6671,
+      "output_tokens": 88,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00010:call0000",
+      "status": "invalid_output",
+      "raw_fact_count": 1,
+      "gold_fact_count": 3,
+      "input_tokens": 4217,
+      "output_tokens": 91,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": [
+        {
+          "fact_index": 0,
+          "turn_idx": 10,
+          "generated_speaker": "client",
+          "metadata_speaker": "operator"
+        }
+      ]
+    },
+    {
+      "call_id": "u2027_00012:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 5,
+      "input_tokens": 4735,
+      "output_tokens": 83,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00013:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 8,
+      "input_tokens": 4588,
+      "output_tokens": 83,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00014:call0000",
+      "status": "invalid_output",
+      "raw_fact_count": 1,
+      "gold_fact_count": 7,
+      "input_tokens": 4432,
+      "output_tokens": 87,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": [
+        {
+          "fact_index": 0,
+          "turn_idx": 1,
+          "generated_speaker": "client",
+          "metadata_speaker": "operator"
+        }
+      ]
+    },
+    {
+      "call_id": "u2027_00015:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 7,
+      "input_tokens": 4350,
+      "output_tokens": 84,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    },
+    {
+      "call_id": "u2027_00016:call0000",
+      "status": "ok",
+      "raw_fact_count": 1,
+      "gold_fact_count": 3,
+      "input_tokens": 4322,
+      "output_tokens": 87,
+      "all_starts_equal_call_started_at": true,
+      "speaker_mismatches": []
+    }
+  ],
+  "observed_statuses": {
+    "ok": 8,
+    "invalid_output": 2
+  },
+  "raw_fact_count_total": 10,
+  "gold_fact_count_total": 54,
+  "generation_max_new_tokens": 4096,
+  "new_gpu_run": false,
+  "causal_prompt_ablation_run": false,
+  "conclusions": [
+    "One-fact behavior is already present in complete raw JSON, before parser/validator; parser does not slice facts[:1].",
+    "No observed output_limit/input_too_long status. Output lengths are far below4096. There is no evidence of token/context clipping in these10 cases.",
+    "All raw start dates copy call metadata. Prompt provided a current-date fallback; historical/future resolution was not learned by case-SFT. This is an observed pattern, not proof of a unique cause.",
+    "Single-fact few-shot example may bias cardinality; only an equal-condition prompt ablation can establish its effect. New instruction requests all facts, keeps chronology, distinguishes observation time from unknown event time.",
+    "Two failures are disagreements with original speaker metadata at selected source idx. Neither changing speaker nor moving source proves semantic correctness; new bridge rejects these errors.",
+    "Two accepted matched facts are not representative quality. No comparison to previous0.6B architecture is causally justified because prompts/parsers differ."
+  ]
+}

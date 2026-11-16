@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "steps": 16,
+  "adapter_weight_changed": true,
+  "measured_median_seconds_per_update": 2.0082443865001096
+}

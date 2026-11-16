@@ -1,0 +1,57 @@
+{
+  "complete": true,
+  "n_completed": 383,
+  "n_planned": 383,
+  "model_id": "qwen06-temporal-v23-parent500-plus0",
+  "training_performed": false,
+  "primary_serving_metrics": {
+    "metrics_version": "2.1",
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 1195,
+    "fact_precision": 0.6736,
+    "fact_recall": 0.4363,
+    "temporal_recall": 0.326,
+    "n_temporal": 497,
+    "state_accuracy": 0.4559,
+    "n_state": 623,
+    "grounding_turn": 0.8534,
+    "grounding_span": null,
+    "n_grounded": 805
+  },
+  "baseline_recomputed": {
+    "metrics_version": "2.1",
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 2097,
+    "fact_precision": 0.3348,
+    "fact_recall": 0.3805,
+    "temporal_recall": 0.4706,
+    "n_temporal": 442,
+    "state_accuracy": 0.5345,
+    "n_state": 623,
+    "grounding_turn": 0.7835,
+    "grounding_span": null,
+    "n_grounded": 702
+  },
+  "quality_checks": {
+    "temporal_main_min": 0.4506,
+    "temporal_consideration_min": 0.4206,
+    "state_main_min": 0.5145,
+    "temporal_main_met": false,
+    "temporal_consideration_met": false,
+    "state_main_met": false,
+    "resource_gain_vs_official_baseline_proven": false
+  },
+  "generation_statuses": {
+    "ok": 359,
+    "partial": 24
+  },
+  "metric_errors": {},
+  "official_report": "official_val383/metrics.json",
+  "mean_gpu_seconds_per_call": 31.178681611396886,
+  "peak_cuda_allocated_bytes": 4014149632,
+  "failures_policy": "Failed generations are explicitly recorded as failed; their empty fact lists penalize official metrics, not successful empty outputs",
+  "scope": "All 383 official validation calls",
+  "all_task_requirements_proven": false
+}

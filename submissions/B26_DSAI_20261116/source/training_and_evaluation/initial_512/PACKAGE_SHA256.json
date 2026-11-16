@@ -1,0 +1,12 @@
+{
+  "sha256": {
+    "MTS_04_Qwen3_06B_Friend.ipynb": "4f9637f8e119838a461c8e31d56157fdf093f6d4d2b1000ac719412b15ca8f44",
+    "mts_friend_qwen06_payload.zip": "39cd9de9ba4ec62a40fe75010375014ed8aff7ac5d03a32debd55bc986f87733",
+    "START_HERE.md": "786b67f8b7602747998c306a7c42ee0eb87a4fe125b64b56f0e237ba8eeebe34",
+    "CODEX_TASK.md": "7c428c8e7148c494748500af84eb4cbfe43f44d7308a0bd67c3965d7e2b99136",
+    "LOCAL_CHECKS.json": "0dbf99e76ee691abf72fc59a7c08be2600f07c03d2e61db9d078899bb746ba84",
+    "official_documents/Кейс_CompactFactExtraction.pdf": "1eb21cb72c1ea5ee97d42bca0aa086525979bd5f25fec4728362cc80c42aa553",
+    "official_documents/Критерии оценивания МТС MWS CompactFactExtraction.pdf": "465a53ac3d3a0e10d6ea2178951256fb7ffd7ec7f36e50ef3058dfc8e9489528"
+  },
+  "policy": "Private team transfer; weights and credentials absent; no training launched."
+}

@@ -1,0 +1,86 @@
+{
+  "complete": true,
+  "n_completed": 383,
+  "n_planned": 383,
+  "metrics": {
+    "partial_normalized": {
+      "metrics_version": "2.1",
+      "n_calls": 383,
+      "n_gold_facts": 1845,
+      "n_pred_facts": 1761,
+      "fact_precision": 0.5389,
+      "fact_recall": 0.5144,
+      "temporal_recall": 0.3812,
+      "n_temporal": 585,
+      "state_accuracy": 0.4559,
+      "n_state": 623,
+      "grounding_turn": 0.7945,
+      "grounding_span": null,
+      "n_grounded": 949
+    },
+    "partial_serving": {
+      "metrics_version": "2.1",
+      "n_calls": 383,
+      "n_gold_facts": 1845,
+      "n_pred_facts": 1195,
+      "fact_precision": 0.6736,
+      "fact_recall": 0.4363,
+      "temporal_recall": 0.326,
+      "n_temporal": 497,
+      "state_accuracy": 0.4559,
+      "n_state": 623,
+      "grounding_turn": 0.8534,
+      "grounding_span": null,
+      "n_grounded": 805
+    }
+  },
+  "metrics_by_slice": {
+    "official_real": {
+      "partial_normalized": {
+        "metrics_version": "2.1",
+        "n_calls": 383,
+        "n_gold_facts": 1845,
+        "n_pred_facts": 1761,
+        "fact_precision": 0.5389,
+        "fact_recall": 0.5144,
+        "temporal_recall": 0.3812,
+        "n_temporal": 585,
+        "state_accuracy": 0.4559,
+        "n_state": 623,
+        "grounding_turn": 0.7945,
+        "grounding_span": null,
+        "n_grounded": 949
+      },
+      "partial_serving": {
+        "metrics_version": "2.1",
+        "n_calls": 383,
+        "n_gold_facts": 1845,
+        "n_pred_facts": 1195,
+        "fact_precision": 0.6736,
+        "fact_recall": 0.4363,
+        "temporal_recall": 0.326,
+        "n_temporal": 497,
+        "state_accuracy": 0.4559,
+        "n_state": 623,
+        "grounding_turn": 0.8534,
+        "grounding_span": null,
+        "n_grounded": 805
+      }
+    }
+  },
+  "metric_errors": {},
+  "generation_seconds_total": 11941.435057165007,
+  "generation_seconds_this_process": 11941.435057165007,
+  "mean_seconds_per_call": 31.178681611396886,
+  "p50_seconds_per_call": 32.28001830699941,
+  "peak_cuda_allocated_bytes": 4014149632,
+  "peak_cuda_reserved_bytes": 4773117952,
+  "statuses": {
+    "partial": {
+      "ok": 359,
+      "partial": 24
+    }
+  },
+  "scope": "Full planned set",
+  "resource_definition": "Synchronized single-GPU generation wall time; excludes warmup/load/postprocess; no official-baseline speedup claim."
+}

@@ -1,0 +1,20 @@
+ARG PYTHON_IMAGE=python:3.12.8-slim@sha256:2199a62885a12290dc9c5be3ca0681d367576ab7bf037da120e564723292a2f0
+FROM ${PYTHON_IMAGE}
+ARG TORCH_VERSION
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cpu
+WORKDIR /app
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 MWS_MODE=real \
+    MWS_PIPELINE_FACTORY=ml.qwen.serving:factory HF_HUB_OFFLINE=1
+ENV MWS_TORCH_VERSION=${TORCH_VERSION}
+COPY requirements.lock requirements.runtime.lock ./
+RUN test -n "$TORCH_VERSION" && python -m pip install --no-cache-dir --index-url "$TORCH_INDEX_URL" "torch==$TORCH_VERSION"
+RUN python -m pip install --no-cache-dir -r requirements.runtime.lock && useradd --uid 10001 --create-home app
+COPY src ./src
+COPY ml ./ml
+COPY scripts ./scripts
+COPY frontend ./frontend
+USER 10001:10001
+EXPOSE 8000
+HEALTHCHECK --start-period=180s --interval=10s --timeout=5s CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"
+ENTRYPOINT ["python","-m","scripts.release_preflight"]
+CMD ["uvicorn","src.api.app:app","--host","0.0.0.0","--port","8000","--workers","1"]

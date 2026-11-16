@@ -1,0 +1,212 @@
+{
+  "complete": true,
+  "n_completed": 32,
+  "n_planned": 32,
+  "metrics": {
+    "partial_normalized": {
+      "metrics_version": "2.1",
+      "n_calls": 32,
+      "n_gold_facts": 144,
+      "n_pred_facts": 149,
+      "fact_precision": 0.5369,
+      "fact_recall": 0.5556,
+      "temporal_recall": 0.3571,
+      "n_temporal": 42,
+      "state_accuracy": 0.4545,
+      "n_state": 44,
+      "grounding_turn": 0.7625,
+      "grounding_span": null,
+      "n_grounded": 80
+    },
+    "partial_serving": {
+      "metrics_version": "2.1",
+      "n_calls": 32,
+      "n_gold_facts": 144,
+      "n_pred_facts": 109,
+      "fact_precision": 0.5963,
+      "fact_recall": 0.4514,
+      "temporal_recall": 0.2857,
+      "n_temporal": 35,
+      "state_accuracy": 0.4545,
+      "n_state": 44,
+      "grounding_turn": 0.8462,
+      "grounding_span": null,
+      "n_grounded": 65
+    },
+    "calendar_normalized": {
+      "metrics_version": "2.1",
+      "n_calls": 32,
+      "n_gold_facts": 144,
+      "n_pred_facts": 149,
+      "fact_precision": 0.5369,
+      "fact_recall": 0.5556,
+      "temporal_recall": 0.3571,
+      "n_temporal": 42,
+      "state_accuracy": 0.4545,
+      "n_state": 44,
+      "grounding_turn": 0.7625,
+      "grounding_span": null,
+      "n_grounded": 80
+    },
+    "calendar_serving": {
+      "metrics_version": "2.1",
+      "n_calls": 32,
+      "n_gold_facts": 144,
+      "n_pred_facts": 109,
+      "fact_precision": 0.5963,
+      "fact_recall": 0.4514,
+      "temporal_recall": 0.2857,
+      "n_temporal": 35,
+      "state_accuracy": 0.4545,
+      "n_state": 44,
+      "grounding_turn": 0.8462,
+      "grounding_span": null,
+      "n_grounded": 65
+    }
+  },
+  "metrics_by_slice": {
+    "official_real": {
+      "partial_normalized": {
+        "metrics_version": "2.1",
+        "n_calls": 24,
+        "n_gold_facts": 117,
+        "n_pred_facts": 118,
+        "fact_precision": 0.5593,
+        "fact_recall": 0.5641,
+        "temporal_recall": 0.375,
+        "n_temporal": 40,
+        "state_accuracy": 0.4722,
+        "n_state": 36,
+        "grounding_turn": 0.7424,
+        "grounding_span": null,
+        "n_grounded": 66
+      },
+      "partial_serving": {
+        "metrics_version": "2.1",
+        "n_calls": 24,
+        "n_gold_facts": 117,
+        "n_pred_facts": 79,
+        "fact_precision": 0.6456,
+        "fact_recall": 0.4359,
+        "temporal_recall": 0.303,
+        "n_temporal": 33,
+        "state_accuracy": 0.4722,
+        "n_state": 36,
+        "grounding_turn": 0.8431,
+        "grounding_span": null,
+        "n_grounded": 51
+      },
+      "calendar_normalized": {
+        "metrics_version": "2.1",
+        "n_calls": 24,
+        "n_gold_facts": 117,
+        "n_pred_facts": 118,
+        "fact_precision": 0.5593,
+        "fact_recall": 0.5641,
+        "temporal_recall": 0.375,
+        "n_temporal": 40,
+        "state_accuracy": 0.4722,
+        "n_state": 36,
+        "grounding_turn": 0.7424,
+        "grounding_span": null,
+        "n_grounded": 66
+      },
+      "calendar_serving": {
+        "metrics_version": "2.1",
+        "n_calls": 24,
+        "n_gold_facts": 117,
+        "n_pred_facts": 79,
+        "fact_precision": 0.6456,
+        "fact_recall": 0.4359,
+        "temporal_recall": 0.303,
+        "n_temporal": 33,
+        "state_accuracy": 0.4722,
+        "n_state": 36,
+        "grounding_turn": 0.8431,
+        "grounding_span": null,
+        "n_grounded": 51
+      }
+    },
+    "synthetic_stress": {
+      "partial_normalized": {
+        "metrics_version": "2.1",
+        "n_calls": 8,
+        "n_gold_facts": 27,
+        "n_pred_facts": 31,
+        "fact_precision": 0.4516,
+        "fact_recall": 0.5185,
+        "temporal_recall": 0.0,
+        "n_temporal": 2,
+        "state_accuracy": 0.375,
+        "n_state": 8,
+        "grounding_turn": 0.8571,
+        "grounding_span": null,
+        "n_grounded": 14
+      },
+      "partial_serving": {
+        "metrics_version": "2.1",
+        "n_calls": 8,
+        "n_gold_facts": 27,
+        "n_pred_facts": 30,
+        "fact_precision": 0.4667,
+        "fact_recall": 0.5185,
+        "temporal_recall": 0.0,
+        "n_temporal": 2,
+        "state_accuracy": 0.375,
+        "n_state": 8,
+        "grounding_turn": 0.8571,
+        "grounding_span": null,
+        "n_grounded": 14
+      },
+      "calendar_normalized": {
+        "metrics_version": "2.1",
+        "n_calls": 8,
+        "n_gold_facts": 27,
+        "n_pred_facts": 31,
+        "fact_precision": 0.4516,
+        "fact_recall": 0.5185,
+        "temporal_recall": 0.0,
+        "n_temporal": 2,
+        "state_accuracy": 0.375,
+        "n_state": 8,
+        "grounding_turn": 0.8571,
+        "grounding_span": null,
+        "n_grounded": 14
+      },
+      "calendar_serving": {
+        "metrics_version": "2.1",
+        "n_calls": 8,
+        "n_gold_facts": 27,
+        "n_pred_facts": 30,
+        "fact_precision": 0.4667,
+        "fact_recall": 0.5185,
+        "temporal_recall": 0.0,
+        "n_temporal": 2,
+        "state_accuracy": 0.375,
+        "n_state": 8,
+        "grounding_turn": 0.8571,
+        "grounding_span": null,
+        "n_grounded": 14
+      }
+    }
+  },
+  "metric_errors": {},
+  "generation_seconds_total": 997.7759952060003,
+  "generation_seconds_this_process": 997.7759952060003,
+  "mean_seconds_per_call": 31.18049985018751,
+  "p50_seconds_per_call": 32.49385977400004,
+  "peak_cuda_allocated_bytes": 3274672128,
+  "peak_cuda_reserved_bytes": 3875536896,
+  "statuses": {
+    "partial": {
+      "ok": 30,
+      "partial": 2
+    },
+    "calendar": {
+      "ok": 30,
+      "partial": 2
+    }
+  },
+  "scope": "Full planned set",
+  "resource_definition": "Synchronized single-GPU generation wall time; excludes warmup/load/postprocess; no official-baseline speedup claim."
+}

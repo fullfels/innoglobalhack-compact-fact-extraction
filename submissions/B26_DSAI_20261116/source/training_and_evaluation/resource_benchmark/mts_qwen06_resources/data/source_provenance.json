@@ -1,0 +1,13 @@
+{
+  "source": "Official organizer archive train.jsonl",
+  "call_ids": [
+    "u104_00550:call0001",
+    "u101_02343:call0000",
+    "u101_00077:call0000",
+    "u101_00789:call0000"
+  ],
+  "original_inputs_unchanged": true,
+  "gold_restored_from_original_instead_of_prepared_variant": [
+    "u101_02343:call0000"
+  ]
+}

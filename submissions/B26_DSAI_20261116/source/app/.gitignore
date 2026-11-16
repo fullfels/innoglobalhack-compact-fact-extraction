@@ -1,0 +1,44 @@
+.venv/
+/runtime_config.json
+__pycache__/
+.pytest_cache/
+artifacts/
+*.pyc
+
+# Credentials, local environments and caches
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+.DS_Store
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.log
+# Organizer data is obtained separately; keep tiny independent fixtures allowed
+/data/raw/
+/data/processed/
+/data/private/
+train.jsonl
+val.jsonl
+baseline_pred.jsonl
+/catalog.json
+*.pdf
+# Weights/checkpoints and private experiment outputs
+*.safetensors
+*.pt
+*.pth
+*.ckpt
+*.gguf
+/checkpoints/
+/ml/experiments/runs/
+/experiments/
+/artifacts/*
+!/artifacts/README.md
+!/artifacts/
+/artifacts/*
+!/artifacts/README.md

@@ -1,0 +1,13 @@
+{
+  "outer_zip_sha256": "3b86fcd0f1cdfbab33766c913e3eed8327f9bafebc802afd4fd03f491bdf5c8b",
+  "outer_zip_bytes": 49255488,
+  "files_sha256": {
+    "MTS_09_Qwen06_V21_2000_5H.ipynb": "4f0734d5beeccfc2a95cacd24c610675c22d47e3d5e79a3fa368c3e5a129aea3",
+    "mts_qwen06_v21_2000_payload.zip": "e4213f2a63108222c75715b746b90a7307b5520aff4263825dda2c2cf3a0f2c0",
+    "README_START.md": "eeafdfd822615475761968bbe5b463dc3d77ddfa107c5bef5b74ef88eb6c0c21",
+    "BUILD_INFO.json": "9f6cc8920f1d10948060e0470ea68cc2963e9e2c865a382252153feb186a3381",
+    "LOCAL_INPUT_CHECKS.json": "df1c85eee6c508145b1ead91bcb891f25d79326684f9502ad0674c00fb724fe6",
+    "LOCAL_VALIDATION.json": "0ba715ad67b2572f576cb4b35170f6163b111dc1656c6a06c1f6e818b50b4711"
+  },
+  "gpu_training_started": false
+}

@@ -1,0 +1,53 @@
+{
+  "archives": {
+    "official383": {
+      "source_archive": "official383_20261115T224130Z_results (1).zip",
+      "source_archive_sha256": "095f17a786d0fd623d213173cd3f81910ee412a1a3385d8c439259c4ce784b11",
+      "source_inventory_files": 394,
+      "includes_model": false,
+      "published_sha256": {
+        "baseline_recomputed.json": "82efd2af7159b8810ecc36aa1b761c8cf2fbf0acefbfe765c73afb3d190376d1",
+        "inference_config.json": "720e9a78b891bd85bb72ab1aa8487251e35c6d0fa95712b75ea66664292631c9",
+        "official_val383/metrics.json": "6cb929ac81c545046e542fb84937902d60ad458f45d3976a7fdfbeef993518f0",
+        "official_val383/generation_manifest.json": "5bbc008e15b346cd7d4cc66a72ea975685cd73d351313bc6aa14f50f4d9909fe",
+        "predictions.jsonl": "e66de59e613b860722c09fd8fd22bd69e3ef576574a18c94e90ae0e3187180ca",
+        "source_results_manifest.json": "32a285e897efd23dbcda82dcf251faad7ab9c84850b076d752d19514f6dbc7c7"
+      },
+      "excluded": "Per-call raw generation records, transcripts, inner-dev prediction files, GPU process listings and session budget files. Source inventory covers the full original ZIP, not only files published here."
+    },
+    "temporal": {
+      "source_archive": "temporal_20261115T193935Z_results (1).zip",
+      "source_archive_sha256": "9495807625030c16f4ac342406c908f071153e2ba177ca247d6e1cf9c52b83ab",
+      "source_inventory_files": 296,
+      "includes_model": false,
+      "published_sha256": {
+        "baseline_choice.json": "949db3296bf93a7f46d2989636a715fa270dd216fea5a2a2a8fc32d0dfe1c58e",
+        "best_choice.json": "949db3296bf93a7f46d2989636a715fa270dd216fea5a2a2a8fc32d0dfe1c58e",
+        "best_pointer.json": "daff967c683facf58dfa596cc20b2df9a7c147af79cacac42f8d7d5b835c05d5",
+        "experiment_report.json": "c38bb081c251447a0d3706b89eb531cff9c86635e1408637599e770623499bce",
+        "first_updates.json": "7a250cf25ed56f9697e81128626888fd0c4dfb12dd27e83dea4a07f2a41d8806",
+        "last_pointer.json": "21eba33faf8340c8224966aed1062277d6231ee850f97c29d2e50819e1da03da",
+        "longest_probe.json": "45af202f0034f3730e384e6b74c478201a60d42f629832150dcd02e4869e0a64",
+        "loss_selftest.json": "8ef3adbf8550e9dc74e72693d703055f85958a087f3cac894637f8f6ad189045",
+        "native_token_audit.json": "d3a6cdbf05fe3b8800159ad12ba90ebfbfc491027f0f483c9cadc25e8677600d",
+        "parameter_counts.json": "49eb6604916f23e02c57df6cc666f25783d0985794f923f4f021a24822fbd7b5",
+        "quality_checks.json": "9af509dcd5ee60dcbc7c231e19aae292a7deed89f46c15557f2552e18e1af60f",
+        "reload_test.json": "6d1a5fe391c2b84f8afa8bf6c137d13f8812955d02d4739e9846a96dca95bcd9",
+        "training_complete.json": "75d81f0b97b95c5ad6a17fccc7f324e6aaa78b5fed93cb611e09e17414105fd1",
+        "training_config.json": "42eec2c22f01f9a04d1604ff362fe7ec851bfa825f17af6b7fcb811b1a8cb7f9",
+        "training_log.json": "3ef318347702d6101f733a05d79dbeca1b3d36ab9faef57395f5b8278afd4f8d",
+        "provenance/selected_model_manifest.json": "a1cb70e22b80b31096539c86265278bfce5ab1aa83477030cf83216825554385",
+        "before_guard24/metrics.json": "64b33248499f9570a0d359f7c21920735f9be8884bf23ce36bf366a0c1d04179",
+        "before_selection32/metrics.json": "a2d263bd32c1484e354cf1136a135de0d37209f656ee5c97bafde267efb78b66",
+        "selection_update000064/metrics.json": "76288417880ef0d5dde8c9b7f43e5aa7aa5b1485dec05e703453a7717008606d",
+        "selection_update000128/metrics.json": "a478e6ea81b640aa8cb9e8a541e5a46fa32080c9ac39cc09ce6f5377488340a1",
+        "selection_update000192/metrics.json": "fd659eadc76259c148e15d8d77cb9a8b73bb1c6ea3ed00ddcc3f87bc813d93d1",
+        "selection_update000256/metrics.json": "ae965974731ae9f29b4c793c07cbee3efca436846775295844dfce7719ba7e25",
+        "source_results_manifest.json": "342644bd067b8e8a4267ec7a84c03f0b57eba1a9163550373f14e3e9bab02c0f"
+      },
+      "excluded": "Per-call raw generation records, transcripts, inner-dev prediction files, GPU process listings and session budget files. Source inventory covers the full original ZIP, not only files published here."
+    }
+  },
+  "new_training": false,
+  "new_model_inference": false
+}

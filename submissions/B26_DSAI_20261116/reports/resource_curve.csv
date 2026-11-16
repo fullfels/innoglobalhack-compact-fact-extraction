@@ -1,0 +1,4 @@
+device,mode,complete,calls,errors,mean_seconds_all_attempts,RAM_MiB,VRAM_reserved_MiB,precision,recall,F1,temporal,n_temporal,state,n_state,status
+cuda,fp16,True,4,0,30.313357305500006,3786.203125,2754.0,0.7273,0.4706,0.5714456632440104,0.0,5,0.6,5,measured
+cuda,int8,True,4,2,89.0353349402501,4046.6015625,2444.0,1.0,0.2353,0.38096009066623493,0.0,1,0.2,5,measured
+cuda,int4,True,4,4,94.91730473275004,4180.52734375,2164.0,0.0,0.0,0,,0,0.0,5,measured

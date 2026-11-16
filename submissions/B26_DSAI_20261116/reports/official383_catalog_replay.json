@@ -1,0 +1,39 @@
+{
+  "policy": "tariff-catalog-v1",
+  "complete_ids": true,
+  "n_gold_calls": 383,
+  "n_predicted_calls": 383,
+  "before": {
+    "metrics_version": "2.1",
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 1195,
+    "fact_precision": 0.6736,
+    "fact_recall": 0.4363,
+    "temporal_recall": 0.326,
+    "n_temporal": 497,
+    "state_accuracy": 0.4559,
+    "n_state": 623,
+    "grounding_turn": 0.8534,
+    "grounding_span": null,
+    "n_grounded": 805
+  },
+  "after": {
+    "metrics_version": "2.1",
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 1195,
+    "fact_precision": 0.6736,
+    "fact_recall": 0.4363,
+    "temporal_recall": 0.326,
+    "n_temporal": 497,
+    "state_accuracy": 0.4575,
+    "n_state": 623,
+    "grounding_turn": 0.8534,
+    "grounding_span": null,
+    "n_grounded": 805
+  },
+  "new_model_calls": 0,
+  "scope": "Quality replay of saved serving facts; consult original raw records for generation/schema failures",
+  "n_tariff_changes": 18
+}

@@ -1,0 +1,193 @@
+{
+  "source_manifest": {
+    "README.md": {
+      "bytes": 4399,
+      "sha256": "89e62da2d9762cb6449ad37a3d806c862f2d7df80d008cbc02775273f4366509"
+    },
+    "schema.md": {
+      "bytes": 6409,
+      "sha256": "8435f897c4d848a696c2bc5aecf061914d251296ffb2e0312f2d2d907436484b"
+    },
+    "catalog.json": {
+      "bytes": 16809,
+      "sha256": "b7579c704e03e76e174e54bf7e7099171bc62301a2cfd8f5b3c7838b552701cb"
+    },
+    "train.jsonl": {
+      "bytes": 31039884,
+      "sha256": "62cb4af045ab12dbc854d71532b3b796ef501f4a232359e98549863ae0476fcb"
+    },
+    "val.jsonl": {
+      "bytes": 3119768,
+      "sha256": "fb0dd73bba4b642ca18538751ce4a64d40a569aa7edd1a2a2b595af3c6b6ca83"
+    },
+    "baseline_pred.jsonl": {
+      "bytes": 547648,
+      "sha256": "11a6685758b872c81b16bb5f3d6eac9667d91a92d40760d1153a0eacd7d02ab6"
+    },
+    "baseline_metrics.json": {
+      "bytes": 280,
+      "sha256": "cc6858b774f4fbd37e1e8fa4b7430af53cc6465e504dee8c0a80a1e71cb456b4"
+    },
+    "case_metrics.py": {
+      "bytes": 8521,
+      "sha256": "dffec9b8b20c5a8a101a33a27b1672f2b6195f00ab60f021a1c14b31eeeacabd"
+    },
+    "Кейс_CompactFactExtraction.pdf": {
+      "bytes": 150935,
+      "sha256": "1eb21cb72c1ea5ee97d42bca0aa086525979bd5f25fec4728362cc80c42aa553"
+    },
+    "Критерии_оценивания_МТС_MWS_CompactFactExtraction.pdf": {
+      "bytes": 134735,
+      "sha256": "465a53ac3d3a0e10d6ea2178951256fb7ffd7ec7f36e50ef3058dfc8e9489528"
+    }
+  },
+  "stats": {
+    "train.jsonl": {
+      "calls": 3926,
+      "unique_call_ids": 3926,
+      "facts": 18475,
+      "attributes": {
+        "action": 3732,
+        "agreement": 5021,
+        "service_state": 4400,
+        "tariff": 1839,
+        "ticket_status": 3483
+      },
+      "polarity": {
+        "1": 18276,
+        "-1": 199
+      },
+      "zero_fact_calls": 147,
+      "source_checks": {
+        "quote_not_literal": 7365,
+        "present_spans": 6326,
+        "span_quote_mismatch": 5602
+      },
+      "chars": {
+        "min": 3,
+        "median": 2037,
+        "p95_nearest_rank_lower": 6182,
+        "max": 21973
+      },
+      "noise": {
+        "0.25": 3926
+      },
+      "min_turns": 1,
+      "max_turns": 198
+    },
+    "val.jsonl": {
+      "calls": 383,
+      "unique_call_ids": 383,
+      "facts": 1845,
+      "attributes": {
+        "service_state": 453,
+        "action": 368,
+        "agreement": 478,
+        "tariff": 146,
+        "ticket_status": 400
+      },
+      "polarity": {
+        "1": 1824,
+        "-1": 21
+      },
+      "zero_fact_calls": 15,
+      "source_checks": {
+        "present_spans": 659,
+        "span_quote_mismatch": 585,
+        "quote_not_literal": 744
+      },
+      "chars": {
+        "min": 224,
+        "median": 1979,
+        "p95_nearest_rank_lower": 6942,
+        "max": 19845
+      },
+      "noise": {
+        "0.25": 383
+      },
+      "min_turns": 2,
+      "max_turns": 184
+    },
+    "baseline_pred.jsonl": {
+      "calls": 383,
+      "unique_call_ids": 383,
+      "facts": 2097,
+      "attributes": {
+        "service_state": 749,
+        "agreement": 235,
+        "action": 422,
+        "ticket_status": 495,
+        "tariff": 196
+      },
+      "polarity": {
+        "1": 2015,
+        "-1": 82
+      },
+      "zero_fact_calls": 29
+    }
+  },
+  "train_val_overlap": {
+    "call_id": 0,
+    "account": 0,
+    "exact_turn_texts": 0
+  },
+  "baseline_id_set_matches_val": true,
+  "baseline_published": {
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 2097,
+    "fact_precision": 0.2074,
+    "fact_recall": 0.2358,
+    "temporal_recall": 0.4161,
+    "n_temporal": 435,
+    "state_accuracy": 0.3483,
+    "n_state": 623,
+    "grounding_turn": 0.6759,
+    "grounding_span": null,
+    "n_grounded": 435
+  },
+  "baseline_recomputed": {
+    "n_calls": 383,
+    "n_gold_facts": 1845,
+    "n_pred_facts": 2097,
+    "fact_precision": 0.2189,
+    "fact_recall": 0.2488,
+    "temporal_recall": 0.4205,
+    "n_temporal": 459,
+    "state_accuracy": 0.3194,
+    "n_state": 623,
+    "grounding_turn": 0.6906,
+    "grounding_span": null,
+    "n_grounded": 459
+  },
+  "baseline_discrepancies": {
+    "fact_precision": {
+      "published": 0.2074,
+      "recomputed": 0.2189
+    },
+    "fact_recall": {
+      "published": 0.2358,
+      "recomputed": 0.2488
+    },
+    "temporal_recall": {
+      "published": 0.4161,
+      "recomputed": 0.4205
+    },
+    "n_temporal": {
+      "published": 435,
+      "recomputed": 459
+    },
+    "state_accuracy": {
+      "published": 0.3483,
+      "recomputed": 0.3194
+    },
+    "grounding_turn": {
+      "published": 0.6759,
+      "recomputed": 0.6906
+    },
+    "n_grounded": {
+      "published": 435,
+      "recomputed": 459
+    }
+  }
+}

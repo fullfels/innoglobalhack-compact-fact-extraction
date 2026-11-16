@@ -1,0 +1,12 @@
+services:
+  extractor:
+    environment:
+      MTS_MODEL_DEVICE: cuda
+      MWS_MODEL_MAX_CALL_SECONDS: ${MWS_MODEL_MAX_CALL_SECONDS:-120}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

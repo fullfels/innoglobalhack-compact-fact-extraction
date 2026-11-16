@@ -1,0 +1,8 @@
+{
+  "new_updates": 256,
+  "calls_seen": 1024,
+  "goal_updates": 256,
+  "schedule_completed": true,
+  "stop_reason": "one_pass_completed",
+  "training_window_seconds": 4803.245407342911
+}

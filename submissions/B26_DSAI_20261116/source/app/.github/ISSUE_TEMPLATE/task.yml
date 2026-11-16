@@ -1,0 +1,20 @@
+name: Дополнительная задача
+description: Для задач вне исходного backlog. Для T01–T45 используйте существующие Issues.
+title: "[Task] "
+body:
+  - type: textarea
+    id: scope
+    attributes:
+      label: Описание и единственный владелец
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Definition of Done и метод проверки
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Зависимости, риск и deadline

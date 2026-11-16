@@ -1,0 +1,48 @@
+{
+  "device": "cpu",
+  "modes": {
+    "fp16": {
+      "complete": true,
+      "mode": "fp16",
+      "device": "cpu",
+      "actual_dtype": "float32",
+      "load_seconds": 24.86745416099984,
+      "warmup_seconds": 2.6383302909998747,
+      "n_planned": 4,
+      "n_attempted": 4,
+      "accepted_responses": 4,
+      "fully_accepted_generations": 4,
+      "generation_failures": 0,
+      "metrics": {
+        "metrics_version": "2.1",
+        "n_calls": 4,
+        "n_gold_facts": 17,
+        "n_pred_facts": 11,
+        "fact_precision": 0.7273,
+        "fact_recall": 0.4706,
+        "temporal_recall": 0.0,
+        "n_temporal": 5,
+        "state_accuracy": 0.6,
+        "n_state": 5,
+        "grounding_turn": 1.0,
+        "grounding_span": null,
+        "n_grounded": 8
+      },
+      "mean_seconds_all_attempts": 349.5051884397503,
+      "p50_seconds": 385.0283816605006,
+      "p95_nearest_rank_seconds": 566.6528278799997,
+      "p95_limitation": "Only four samples and one pass; descriptive, not stable population percentile",
+      "successful_calls_per_hour": 10.300276273639893,
+      "gpu_seconds_per_1000_attempts": null,
+      "peak_rss_bytes": 4728520704,
+      "peak_cuda_allocated_bytes": null,
+      "peak_cuda_reserved_bytes": null,
+      "logical_parameters": 761724928,
+      "disk_is_unquantized": true,
+      "status": "measured"
+    }
+  },
+  "new_training": false,
+  "official_baseline_speedup_proven": false,
+  "all_three_gpu_points_complete": false
+}
