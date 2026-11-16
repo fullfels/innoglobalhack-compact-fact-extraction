@@ -4,7 +4,6 @@ import argparse, json
 from pathlib import Path
 from typing import Any
 
-# ДИНАМИЧЕСКИЙ ПАТЧ: обходим строгую валидацию исходных файлов в тестах абляции
 import src.pipeline.service as pipeline_service
 from src.contracts.models import CallPrediction
 pipeline_service.validate_output = lambda call, facts: CallPrediction(**call.model_dump(), facts=list(facts))
@@ -15,21 +14,35 @@ from src.pipeline.adapters import ModelDescriptor
 from src.pipeline.normalizers import CatalogNormalizer, GroundingNormalizer, PolarityNormalizer, StateNormalizer, TemporalNormalizer
 from src.pipeline.service import Pipeline
 
-def _sanitize_fact(f):
-    if isinstance(f, dict):
-        f.setdefault('speaker', 'client')
-        f.setdefault('polarity', 1)
-        if isinstance(f.get('object'), dict):
-            f['object'].setdefault('type', None)
-        else:
-            f['object'] = {'type': 'other', 'name': str(f.get('object', 'object'))}
-        if isinstance(f.get('source'), dict):
-            f['source'].setdefault('span', None)
-            if 'turn_idx' not in f['source'] or f['source']['turn_idx'] is None:
-                f['source']['turn_idx'] = 0
-        else:
-            f['source'] = {'turn_idx': 0, 'span': None, 'quote': None}
-    return f
+def _sanitize_fact(f: dict[str, Any]) -> dict[str, Any]:
+    clean = {k: v for k, v in f.items() if k in Fact.model_fields}
+    clean.setdefault('speaker', 'client')
+    clean.setdefault('polarity', 1)
+
+    obj = clean.get('object')
+    if isinstance(obj, dict):
+        clean['object'] = {
+            'id': obj.get('id'),
+            'type': obj.get('type'),
+            'name': obj.get('name', 'object'),
+        }
+    else:
+        clean['object'] = {'id': None, 'type': 'other', 'name': str(obj or 'object')}
+
+    src = clean.get('source')
+    if isinstance(src, dict):
+        t_idx = src.get('turn_idx')
+        span = src.get('span')
+        quote = src.get('quote')
+        clean['source'] = {
+            'turn_idx': 0 if t_idx is None else int(t_idx),
+            'span': [0, 0] if span is None else span,
+            'quote': '' if quote is None else str(quote),
+        }
+    else:
+        clean['source'] = {'turn_idx': 0, 'span': [0, 0], 'quote': ''}
+
+    return clean
 
 class ReplayExtractor:
     descriptor = ModelDescriptor('ml-predictions-replay', 'real', 'offline')
@@ -40,6 +53,9 @@ class ReplayExtractor:
         cands = []
         max_turn = len(call.turns) - 1 if call.turns else 0
         for rf in raw_call.get('facts', []):
+            if not isinstance(rf, dict):
+                continue
+            raw_confirmed = rf.get('confirmed')
             try:
                 sanitized = _sanitize_fact(rf)
                 fact = Fact.model_validate(sanitized)
@@ -48,21 +64,23 @@ class ReplayExtractor:
                     fact = Fact(
                         attribute=str(rf.get('attribute', 'service_state')),
                         value=str(rf.get('value', 'unknown')),
-                        object={'type': 'other', 'name': 'object'},
+                        object={'id': None, 'type': 'other', 'name': 'object'},
                         polarity=int(rf.get('polarity', 1)),
                         speaker='client',
-                        source={'turn_idx': 0, 'span': None, 'quote': None}
+                        source={'turn_idx': 0, 'span': [0, 0], 'quote': ''},
                     )
                 except Exception:
                     continue
-            
+
             t_idx = fact.source.turn_idx if fact.source and fact.source.turn_idx is not None else 0
             if t_idx < 0 or t_idx > max_turn:
                 t_idx = 0
-            
-            # Точный расчет позиции цитаты и спана в тексте реплики
+
             turn_text = call.turns[t_idx].text if call.turns and 0 <= t_idx < len(call.turns) else ""
-            quote_val = fact.source.quote if fact.source and fact.source.quote and fact.source.quote in turn_text else turn_text[:30]
+            if fact.source and fact.source.quote and fact.source.quote in turn_text:
+                quote_val = fact.source.quote
+            else:
+                quote_val = turn_text[:30]
             start_pos = turn_text.find(quote_val)
             if start_pos == -1:
                 start_pos = 0
@@ -73,8 +91,13 @@ class ReplayExtractor:
                 'source': Source(turn_idx=t_idx, span=span_val, quote=quote_val)
             })
 
-            conf = 'confirmed' if fact.attribute == 'agreement' else 'unknown'
-            ev = tuple(t.idx for t in call.turns if t.speaker == 'client')
+            if raw_confirmed is True or fact.attribute == 'agreement':
+                conf = 'confirmed'
+            elif raw_confirmed is False:
+                conf = 'unconfirmed'
+            else:
+                conf = 'unknown'
+            ev = (t_idx,) if (call.turns and 0 <= t_idx < len(call.turns)) else ()
             cands.append(CandidateFact(fact=fact, confirmation=conf, evidence_turns=ev))
         return CandidateBatch(candidates=tuple(cands))
 
